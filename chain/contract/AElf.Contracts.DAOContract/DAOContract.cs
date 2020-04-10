@@ -1,7 +1,9 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using Acs3;
 using AElf.Contracts.Association;
 using AElf.Contracts.Consensus.AEDPoS;
+using AElf.Contracts.MultiToken;
 using AElf.CSharp.Core;
 using AElf.Sdk.CSharp;
 using AElf.Types;
@@ -23,7 +25,7 @@ namespace AElf.Contracts.DAOContract
                 Context.GetContractAddressByName(SmartContractConstants.ParliamentContractSystemName);
             State.TokenContract.Value =
                 Context.GetContractAddressByName(SmartContractConstants.TokenContractSystemName);
-            State.ProfitContract.Value = 
+            State.ProfitContract.Value =
                 Context.GetContractAddressByName(SmartContractConstants.ProfitContractSystemName);
 
             // Create Decentralized Autonomous Organization via Association Contract.
@@ -105,6 +107,26 @@ namespace AElf.Contracts.DAOContract
             var projectId = projectInfo.GetProjectId();
             Assert(State.Projects[projectId] != null, "Project not found.");
             SelfProposalProcess(nameof(UpdateInvestmentProject), projectInfo.ToByteString());
+            return new Empty();
+        }
+
+        public override Empty Invest(InvestInput input)
+        {
+            Assert(State.Projects[input.ProjectId] != null, "Project not found.");
+            var projectInfo = State.Projects[input.ProjectId];
+            var totalBudgets = projectInfo.BudgetPlans.Where(p => p.Symbol == input.Symbol).Sum(p => p.Amount);
+            var actualAmount = Math.Min(totalBudgets, input.Amount);
+            if (actualAmount > 0)
+            {
+                State.TokenContract.TransferFrom.Send(new TransferFromInput
+                {
+                    From = Context.Sender,
+                    To = projectInfo.VirtualAddress,
+                    Amount = actualAmount,
+                    Symbol = input.Symbol
+                });
+            }
+
             return new Empty();
         }
 

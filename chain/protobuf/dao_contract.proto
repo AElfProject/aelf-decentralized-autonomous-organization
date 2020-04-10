@@ -34,6 +34,8 @@ service DAOContract {
     //   Developer propose a project for parliament to approve (after DAO).
     rpc ProposeProjectToParliament (ProposeProjectWithBudgetsInput) returns (google.protobuf.Empty) {
     }
+    rpc Invest (InvestInput) returns (google.protobuf.Empty) {
+    }
     //   Interfaces used by DAO Contract itself.
     rpc AddInvestmentProject (ProjectInfo) returns (google.protobuf.Empty) {
     }
@@ -149,4 +151,10 @@ enum ProjectStatus {
     APPROVED = 1;
     TAKEN = 2;// Developers start to dev.
     DELIVERED = 3;
+}
+
+message InvestInput {
+    aelf.Hash project_id = 1;
+    string symbol = 2;
+    int64 amount = 3;
 }

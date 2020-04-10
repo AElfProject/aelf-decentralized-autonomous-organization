@@ -64,13 +64,30 @@ namespace AElf.Contracts.DAOContract
             State.ProfitContract.CreateScheme.Send(new CreateSchemeInput
             {
                 Manager = projectInfo.VirtualAddress,
-                IsReleaseAllBalanceEveryTimeByDefault = true
+                IsReleaseAllBalanceEveryTimeByDefault = true,
+                CanRemoveBeneficiaryDirectly = true
             });
-            var managingSchemeIds = State.ProfitContract.GetManagingSchemeIds.Call(new GetManagingSchemeIdsInput
+
+            var profitSchemeId = State.ProfitContract.GetManagingSchemeIds.Call(new GetManagingSchemeIdsInput
             {
                 Manager = projectInfo.VirtualAddress
-            });
-            return managingSchemeIds.SchemeIds.Last();
+            }).SchemeIds.Last();
+
+            foreach (var budgetPlan in projectInfo.BudgetPlans)
+            {
+                State.ProfitContract.AddBeneficiary.Send(new AddBeneficiaryInput
+                {
+                    SchemeId = profitSchemeId,
+                    EndPeriod = projectInfo.BudgetPlans.Count,
+                    BeneficiaryShare = new BeneficiaryShare
+                    {
+                        Beneficiary = budgetPlan.ReceiverAddress,
+                        Shares = 1
+                    }
+                });
+            }
+
+            return profitSchemeId;
         }
 
         private void PayBudget(ProjectInfo projectInfo)

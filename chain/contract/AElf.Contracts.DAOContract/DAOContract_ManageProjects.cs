@@ -1,3 +1,4 @@
+using AElf.CSharp.Core;
 using Google.Protobuf.WellKnownTypes;
 
 namespace AElf.Contracts.DAOContract
@@ -36,10 +37,24 @@ namespace AElf.Contracts.DAOContract
                 currentProject.ProfitSchemeId = profitSchemeId;
             }
 
-            if (input.Status == ProjectStatus.Delivered)
+            if (input.Status == ProjectStatus.Taken)
             {
-                PayBudget(input);
-                State.PreviewProposalIds.Remove(projectId);
+                if (input.CurrentBudgetPlanIndex > 0)
+                {
+                    PayBudget(input);
+                }
+
+                if (input.CurrentBudgetPlanIndex.Add(1) == input.BudgetPlans.Count)
+                {
+                    State.PreviewProposalIds.Remove(projectId);
+                }
+            }
+
+            if (input.Status == ProjectStatus.Taken)
+            {
+                // TODO: Maintain beneficiaries for sender.
+                // Once a project is DELIVERED, beneficiaries will be investors.
+                // If symbols are diff for every budget plan, may need to calculate weight.
             }
 
             State.Projects[projectId] = currentProject;
