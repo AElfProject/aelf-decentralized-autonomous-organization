@@ -115,7 +115,12 @@ namespace AElf.Contracts.DAOContract
             Assert(State.Projects[input.ProjectId] != null, "Project not found.");
             var projectInfo = State.Projects[input.ProjectId];
             var totalBudgets = projectInfo.BudgetPlans.Where(p => p.Symbol == input.Symbol).Sum(p => p.Amount);
-            var actualAmount = Math.Min(totalBudgets, input.Amount);
+            var existBalance = State.TokenContract.GetBalance.Call(new GetBalanceInput
+            {
+                Owner = projectInfo.VirtualAddress,
+                Symbol = input.Symbol
+            }).Balance;
+            var actualAmount = Math.Min(totalBudgets.Sub(existBalance), input.Amount);
             if (actualAmount > 0)
             {
                 State.TokenContract.TransferFrom.Send(new TransferFromInput
@@ -175,12 +180,33 @@ namespace AElf.Contracts.DAOContract
 
         public override Empty ProposeTakeOverRewardProject(ProposeTakeOverRewardProjectInput input)
         {
-            SelfProposalProcess(nameof(UpdateRewardProject), new ProjectInfo
+            var projectInfo = new ProjectInfo
             {
                 PullRequestUrl = input.PullRequestUrl,
-                CommitId = input.CommitId,
-                Status = ProjectStatus.Taken
-            }.ToByteString());
+                CommitId = input.CommitId
+            };
+            var projectId = projectInfo.GetProjectId();
+            var projectInfoInState = State.Projects[projectId];
+            var takenBudgetPlanIndices = projectInfoInState.BudgetPlans.Where(p => p.ReceiverAddress != null)
+                .Select(p => p.Index).ToList();
+            Assert(!takenBudgetPlanIndices.Any(i => input.BudgetPlanIndices.Contains(i)),
+                "Budget plan already taken.");
+
+            foreach (var planIndex in input.BudgetPlanIndices)
+            {
+                var proposeTakenPlan = projectInfo.BudgetPlans.FirstOrDefault(p => p.Index == planIndex);
+                Assert(proposeTakenPlan != null, "Budget plan not found.");
+                // ReSharper disable once PossibleNullReferenceException
+                proposeTakenPlan.ReceiverAddress = Context.Sender;
+            }
+
+            // If all budget plans are taken, status will be ProjectStatus.Taken, otherwise stay ProjectStatus.Approved.
+            projectInfo.Status =
+                takenBudgetPlanIndices.Count.Add(input.BudgetPlanIndices.Count) == projectInfo.BudgetPlans.Count
+                    ? ProjectStatus.Taken
+                    : ProjectStatus.Approved;
+
+            SelfProposalProcess(nameof(UpdateRewardProject), projectInfo.ToByteString());
             return new Empty();
         }
 
