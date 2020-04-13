@@ -12,15 +12,19 @@ namespace AElf.Contracts.DAOContract
         public override Empty ProposeJoin(StringValue input)
         {
             AssertReleasedByParliament();
-            State.TokenContract.TransferFrom.Send(new TransferFromInput
-            {
-                From = Context.Sender,
-                To = Context.Self,
-                Symbol = State.DepositSymbol.Value,
-                Amount = State.DepositAmount.Value
-            });
-            var memberList = State.DAOMemberList.Value;
             var joinAddress = Address.FromPublicKey(ByteArrayHelper.HexStringToByteArray(input.Value));
+            if (State.DepositAmount.Value > 0)
+            {
+                State.TokenContract.TransferFrom.Send(new TransferFromInput
+                {
+                    From = joinAddress,
+                    To = Context.Self,
+                    Symbol = State.DepositSymbol.Value,
+                    Amount = State.DepositAmount.Value
+                });
+            }
+
+            var memberList = State.DAOMemberList.Value;
             memberList.Value.Add(joinAddress);
             SelfProposalProcess(nameof(State.AssociationContract.ChangeOrganizationMember), new OrganizationMemberList
             {
@@ -31,18 +35,22 @@ namespace AElf.Contracts.DAOContract
             return new Empty();
         }
 
-        public override Empty Quit(StringValue input)
+        public override Empty Quit(Empty input)
         {
-            State.TokenContract.Transfer.Send(new TransferInput
+            if (State.DepositAmount.Value > 0)
             {
-                To = Context.Sender,
-                Symbol = State.DepositSymbol.Value,
-                Amount = State.DepositAmount.Value
-            });
+                State.TokenContract.Transfer.Send(new TransferInput
+                {
+                    To = Context.Sender,
+                    Symbol = State.DepositSymbol.Value,
+                    Amount = State.DepositAmount.Value
+                });
+            }
+
             var memberList = State.DAOMemberList.Value;
-            var quitAddress = Address.FromPublicKey(ByteArrayHelper.HexStringToByteArray(input.Value));
-            Assert(memberList.Value.Contains(quitAddress), $"DAO Member {input.Value} not found.");
-            memberList.Value.Remove(quitAddress);
+            Assert(memberList.Value.Contains(Context.Sender), $"DAO Member {Context.Sender} not found.");
+            memberList.Value.Remove(Context.Sender);
+            memberList.Value.Remove(Context.Sender);
             SelfProposalProcess(nameof(State.AssociationContract.ChangeOrganizationMember), new OrganizationMemberList
             {
                 OrganizationMembers = {memberList.Value}

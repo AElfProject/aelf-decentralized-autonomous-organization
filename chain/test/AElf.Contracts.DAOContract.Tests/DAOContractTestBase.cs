@@ -81,8 +81,7 @@ namespace AElf.Contracts.DAOContract
                         Category = KernelConstants.DefaultRunnerCategory,
                         Code = ByteString.CopyFrom(File.ReadAllBytes(typeof(TokenContract).Assembly.Location)),
                         Name = TokenSmartContractAddressNameProvider.Name,
-                        TransactionMethodCallList =
-                            new SystemContractDeploymentInput.Types.SystemTransactionMethodCallList()
+                        TransactionMethodCallList = GetTokenContractMethodCallList()
                     })).Output;
             TokenContractStub = GetTokenContractStub(DefaultKeyPair);
 
@@ -139,6 +138,40 @@ namespace AElf.Contracts.DAOContract
         internal AEDPoSContractContainer.AEDPoSContractStub GetConsensusContractStub(ECKeyPair keyPair)
         {
             return GetTester<AEDPoSContractContainer.AEDPoSContractStub>(TokenContractAddress, keyPair);
+        }
+
+        private SystemContractDeploymentInput.Types.SystemTransactionMethodCallList GetTokenContractMethodCallList()
+        {
+            return new SystemContractDeploymentInput.Types.SystemTransactionMethodCallList
+            {
+                Value =
+                {
+                    new SystemContractDeploymentInput.Types.SystemTransactionMethodCall
+                    {
+                        MethodName = nameof(TokenContract.Create),
+                        Params = new CreateInput
+                        {
+                            Symbol = "ELF",
+                            Decimals = 8,
+                            Issuer = ContractZeroAddress,
+                            IsBurnable = true,
+                            IsProfitable = true,
+                            TokenName = "Elf token",
+                            TotalSupply = 10_0000_0000_00000000
+                        }.ToByteString()
+                    },
+                    new SystemContractDeploymentInput.Types.SystemTransactionMethodCall
+                    {
+                        MethodName = nameof(TokenContract.Issue),
+                        Params = new IssueInput
+                        {
+                            Symbol = "ELF",
+                            To = AliceAddress,
+                            Amount = 10_0000_0000_00000000
+                        }.ToByteString()
+                    }
+                }
+            };
         }
 
         private SystemContractDeploymentInput.Types.SystemTransactionMethodCallList GetConsensusContractMethodCallList()

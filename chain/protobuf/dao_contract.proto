@@ -21,7 +21,7 @@ service DAOContract {
     rpc ProposeJoin (google.protobuf.StringValue) returns (google.protobuf.Empty) {
     }
     //   To not be a DAO member.
-    rpc Quit (google.protobuf.StringValue) returns (google.protobuf.Empty) {
+    rpc Quit (google.protobuf.Empty) returns (google.protobuf.Empty) {
     }
     //   To expel someone from DAO, need to be approved by parliament.
     rpc ProposeExpel (google.protobuf.StringValue) returns (google.protobuf.Empty) {
