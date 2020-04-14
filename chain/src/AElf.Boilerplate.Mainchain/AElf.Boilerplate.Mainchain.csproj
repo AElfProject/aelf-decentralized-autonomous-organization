@@ -3,6 +3,11 @@
         <TargetFramework>netcoreapp3.1</TargetFramework>
         <RootNamespace>AElf.Boilerplate.MainChain</RootNamespace>
     </PropertyGroup>
+
+    <PropertyGroup>
+        <NoWarn>0436</NoWarn>
+    </PropertyGroup>
+
     <ItemGroup>
         <PackageReference Include="AElf.Blockchains.BasicBaseChain.ContractNames" Version="1.0.0-preview1" />
         <PackageReference Include="AElf.Contracts.Genesis" Version="1.0.0-preview1" />

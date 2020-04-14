@@ -68,7 +68,8 @@ namespace AElf.Contracts.DAOContract
             await DAOContractStub.ReleaseProposal.SendAsync(new ReleaseProposalInput
             {
                 ProjectId = projectId,
-                ProposalId = proposalId
+                ProposalId = proposalId,
+                OrganizationType = ProposalOrganizationType.DAO
             });
 
             // Check project info.
@@ -103,7 +104,7 @@ namespace AElf.Contracts.DAOContract
             {
                 ProjectId = projectId,
                 ProposalId = proposalId,
-                IsParliamentProposal = true
+                OrganizationType = ProposalOrganizationType.Parliament
             });
 
             // Check project info.
@@ -173,6 +174,7 @@ namespace AElf.Contracts.DAOContract
             {
                 ProjectId = projectId,
                 ProposalId = proposalId,
+                OrganizationType = ProposalOrganizationType.DAO
             });
 
             await CheckProjectStatus(projectId, ProjectStatus.Delivered);
@@ -234,6 +236,7 @@ namespace AElf.Contracts.DAOContract
             {
                 ProjectId = projectId,
                 ProposalId = proposalId,
+                OrganizationType = ProposalOrganizationType.DAO
             });
 
             // Check project info.
@@ -267,7 +270,7 @@ namespace AElf.Contracts.DAOContract
             {
                 ProjectId = projectId,
                 ProposalId = proposalId,
-                IsParliamentProposal = true
+                OrganizationType = ProposalOrganizationType.Parliament
             });
 
             await CheckProjectStatus(projectId, ProjectStatus.Approved);
@@ -309,7 +312,8 @@ namespace AElf.Contracts.DAOContract
             var proposalId = (await BobDAOContractStub.ProposeTakeOverRewardProject.SendAsync(
                 new ProposeTakeOverRewardProjectInput
                 {
-                    ProjectId = projectId
+                    ProjectId = projectId,
+                    BudgetPlanIndices = {0}
                 })).Output;
 
             await DAOApproveAsync(proposalId);
@@ -318,9 +322,39 @@ namespace AElf.Contracts.DAOContract
             {
                 ProjectId = projectId,
                 ProposalId = proposalId,
+                OrganizationType = ProposalOrganizationType.DAO
             });
 
-            await CheckProjectStatus(projectId, ProjectStatus.Ready);
+            await CheckProjectStatus(projectId, ProjectStatus.Taken);
+
+            return projectId;
+        }
+        
+        [Fact]
+        public async Task<Hash> DevelopersAuditionTest()
+        {
+            var projectId = await TakeOverRewardProjectTest();
+            
+            // Bob want to commit his works for developers to audit.
+            var proposalId = (await BobDAOContractStub.ProposeDevelopersAudition.SendAsync(new ProposeAuditionInput
+            {
+                ProjectId = projectId,
+                DeliverPullRequestUrl = RewardProjectDeliverPullRequestUrl,
+                DeliverCommitId = RewardProjectDeliverCommitId,
+                BudgetPlanIndex = 0
+            })).Output;
+
+            // Bob approves himself.
+            await BobAssociationContractStub.Approve.SendAsync(proposalId);
+
+            await DAOContractStub.ReleaseProposal.SendAsync(new ReleaseProposalInput
+            {
+                ProjectId = projectId,
+                ProposalId = proposalId,
+                OrganizationType = ProposalOrganizationType.Developers
+            });
+
+            await CheckProjectStatus(projectId, ProjectStatus.Taken);
 
             return projectId;
         }
@@ -328,7 +362,7 @@ namespace AElf.Contracts.DAOContract
         [Fact]
         public async Task DeliverRewardProjectTest()
         {
-            var projectId = await TakeOverRewardProjectTest();
+            var projectId = await DevelopersAuditionTest();
 
             // Bob want to deliver project.
             var proposalId = (await BobDAOContractStub.ProposeDeliver.SendAsync(new ProposeAuditionInput
@@ -339,13 +373,14 @@ namespace AElf.Contracts.DAOContract
                 BudgetPlanIndex = 0
             })).Output;
 
-            await CheckProjectStatus(projectId, ProjectStatus.Ready);
+            await CheckProjectStatus(projectId, ProjectStatus.Taken);
 
             await DAOApproveAsync(proposalId);
             await DAOContractStub.ReleaseProposal.SendAsync(new ReleaseProposalInput
             {
                 ProjectId = projectId,
                 ProposalId = proposalId,
+                OrganizationType = ProposalOrganizationType.DAO
             });
 
             await CheckProjectStatus(projectId, ProjectStatus.Delivered);

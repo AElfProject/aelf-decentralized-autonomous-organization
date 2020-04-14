@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using Acs3;
+using AElf.Contracts.Association;
 using AElf.Contracts.MultiToken;
 using AElf.Contracts.Parliament;
 using AElf.Contracts.Profit;
@@ -28,6 +29,7 @@ namespace AElf.Contracts.DAOContract
         private DAOContractContainer.DAOContractStub BobDAOContractStub => GetDAOContractStub(BobKeyPair);
         private TokenContractContainer.TokenContractStub BobTokenContractStub => GetTokenContractStub(BobKeyPair);
         private ProfitContractContainer.ProfitContractStub BobProfitContractStub => GetProfitContractStub(BobKeyPair);
+        private AssociationContractContainer.AssociationContractStub BobAssociationContractStub => GetAssociationContractStub(BobKeyPair);
 
         private async Task InitialDAOContract()
         {

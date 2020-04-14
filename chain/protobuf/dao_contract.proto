@@ -90,7 +90,7 @@ message InitializeInput {
 message ReleaseProposalInput {
     aelf.Hash project_id = 1;
     aelf.Hash proposal_id = 2;
-    bool is_parliament_proposal = 3;
+    ProposalOrganizationType organization_type = 3;
 }
 
 message ProposeProjectInput {
@@ -113,6 +113,7 @@ message BudgetPlan {
     int64 paid_in_amount = 6;
     string deliver_pull_request_url = 7;
     string deliver_commit_id = 8;
+    bool is_approved_by_developers = 9;
 }
 
 message ProposeAuditionInput {
@@ -145,6 +146,13 @@ message ProjectInfo {
     int32 current_budget_plan_index = 6;
     aelf.Hash profit_scheme_id = 7;
     aelf.Address virtual_address = 8;// Save budgets and act as profit scheme manager.
+    ProjectType project_type = 9;
+}
+
+message InvestInput {
+    aelf.Hash project_id = 1;
+    string symbol = 2;
+    int64 amount = 3;
 }
 
 enum ProjectStatus {
@@ -155,8 +163,13 @@ enum ProjectStatus {
     DELIVERED = 4;// Developers finished developing.
 }
 
-message InvestInput {
-    aelf.Hash project_id = 1;
-    string symbol = 2;
-    int64 amount = 3;
+enum ProjectType {
+    INVESTMENT = 0;
+    REWARD = 1;
+}
+
+enum ProposalOrganizationType {
+    PARLIAMENT = 0;
+    D_A_O = 1;
+    DEVELOPERS = 2;
 }

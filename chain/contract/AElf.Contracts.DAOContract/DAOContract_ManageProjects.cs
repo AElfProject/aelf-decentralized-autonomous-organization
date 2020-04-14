@@ -1,5 +1,8 @@
+using System.Collections.Generic;
 using System.Linq;
-using AElf.CSharp.Core;
+using Acs3;
+using AElf.Contracts.Association;
+using AElf.Types;
 using Google.Protobuf.WellKnownTypes;
 
 namespace AElf.Contracts.DAOContract
@@ -16,7 +19,8 @@ namespace AElf.Contracts.DAOContract
                 PullRequestUrl = input.PullRequestUrl,
                 CommitId = input.CommitId,
                 PreAuditionHash = input.PreAuditionHash,
-                VirtualAddress = Context.ConvertVirtualAddressToContractAddress(projectId)
+                VirtualAddress = Context.ConvertVirtualAddressToContractAddress(projectId),
+                ProjectType = input.ProjectType
             };
             return new Empty();
         }
@@ -34,6 +38,7 @@ namespace AElf.Contracts.DAOContract
                 currentProject.BudgetPlans.AddRange(input.BudgetPlans);
                 var profitSchemeId = CreateProfitScheme(currentProject);
                 currentProject.ProfitSchemeId = profitSchemeId;
+                AddBeneficiaries(currentProject);
             }
 
             if (input.Status == ProjectStatus.Ready || input.Status == ProjectStatus.Delivered)
@@ -63,35 +68,63 @@ namespace AElf.Contracts.DAOContract
             var projectId = input.GetProjectId();
             CheckProjectProposalCanBeReleased(projectId);
             var currentProject = State.Projects[projectId];
-            currentProject.Status = input.Status;
             currentProject.CurrentBudgetPlanIndex = input.CurrentBudgetPlanIndex;
+            
+            if (input.Status == ProjectStatus.Approved && currentProject.ProfitSchemeId == null)
+            {
+                CheckBudgetPlans(input.BudgetPlans);
+                currentProject.BudgetPlans.AddRange(input.BudgetPlans);
+                var profitSchemeId = CreateProfitScheme(currentProject);
+                currentProject.ProfitSchemeId = profitSchemeId;
+            }
 
             if (input.Status == ProjectStatus.Approved)
             {
-                if (currentProject.BudgetPlans.Any())
-                {
-                    // Invest to budget plans
-
-                }
-                else
+                if (!currentProject.BudgetPlans.Any())
                 {
                     // Initial budget plans.
                     currentProject.BudgetPlans.AddRange(input.BudgetPlans);
-                    // Need to use Invest method to collect budgets.
                 }
             }
 
-            if (input.Status == ProjectStatus.Ready)
+            if (input.Status == ProjectStatus.Ready || input.Status == ProjectStatus.Taken)
             {
                 foreach (var inputBudgetPlan in input.BudgetPlans.Where(p => p.ReceiverAddress != null))
                 {
                     var budgetPlan = currentProject.BudgetPlans.Single(p => p.Index == inputBudgetPlan.Index);
                     budgetPlan.ReceiverAddress = inputBudgetPlan.ReceiverAddress;
                 }
+            }
 
-                if (input.CurrentBudgetPlanIndex > 0)
+            if (input.Status == ProjectStatus.Taken || input.Status == ProjectStatus.Delivered)
+            {
+                if (currentProject.Status == ProjectStatus.Ready)
+                {
+                    AddBeneficiaries(currentProject);
+                }
+
+                if (State.DeveloperOrganizationAddress[projectId] == null)
+                {
+                    var developerList = currentProject.BudgetPlans.Select(p => p.ReceiverAddress);
+                    State.DeveloperOrganizationAddress[projectId] = CreateDeveloperOrganization(developerList);
+                }
+                
+                if (currentProject.Status == ProjectStatus.Taken && currentProject.BudgetPlans.All(p => p.IsApprovedByDevelopers))
                 {
                     PayBudget(currentProject, input);
+                }
+
+                Assert(input.BudgetPlans.Count == 1, "Can only update one budget plan one time.");
+                var updateBudgetPlan = input.BudgetPlans.Single();
+                
+                // Approved by developers.
+                if (updateBudgetPlan.IsApprovedByDevelopers)
+                {
+                    var targetBudgetPlan =
+                        currentProject.BudgetPlans.SingleOrDefault(p => p.Index == updateBudgetPlan.Index);
+                    Assert(targetBudgetPlan != null, "Target budget plan not found.");
+                    // ReSharper disable once PossibleNullReferenceException
+                    targetBudgetPlan.IsApprovedByDevelopers = true;
                 }
             }
 
@@ -100,8 +133,30 @@ namespace AElf.Contracts.DAOContract
                 State.PreviewProposalIds.Remove(projectId);
             }
 
+            currentProject.Status = input.Status;
             State.Projects[projectId] = currentProject;
             return new Empty();
+        }
+
+        private Address CreateDeveloperOrganization(IEnumerable<Address> developerList)
+        {
+            var createOrganizationInput = new CreateOrganizationInput
+            {
+                OrganizationMemberList = new OrganizationMemberList
+                {
+                    OrganizationMembers = {developerList}
+                },
+                ProposalReleaseThreshold = new ProposalReleaseThreshold
+                {
+                    MinimalApprovalThreshold = 1, MinimalVoteThreshold = 1
+                },
+                ProposerWhiteList = new ProposerWhiteList
+                {
+                    Proposers = {Context.Self}
+                }
+            };
+            State.AssociationContract.CreateOrganization.Send(createOrganizationInput);
+            return State.AssociationContract.CalculateOrganizationAddress.Call(createOrganizationInput);
         }
     }
 }

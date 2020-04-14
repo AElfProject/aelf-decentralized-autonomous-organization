@@ -73,15 +73,28 @@ namespace AElf.Contracts.DAOContract
         {
             State.CanBeReleased[input.ProjectId] = true;
 
-            if (input.IsParliamentProposal)
+            switch (input.OrganizationType)
             {
-                State.ParliamentContract.Release.Send(input.ProposalId);
-            }
-            else
-            {
-                var proposalInfo = State.AssociationContract.GetProposal.Call(input.ProposalId);
-                AssertApprovalCountMeetThreshold(proposalInfo.ApprovalCount);
-                State.AssociationContract.Release.Send(input.ProposalId);
+                case ProposalOrganizationType.Parliament:
+                    State.ParliamentContract.Release.Send(input.ProposalId);
+                    break;
+                case ProposalOrganizationType.DAO:
+                {
+                    var proposalInfo = State.AssociationContract.GetProposal.Call(input.ProposalId);
+                    AssertApprovalCountMeetDAOThreshold(proposalInfo.ApprovalCount);
+                    State.AssociationContract.Release.Send(input.ProposalId);
+                }
+                    break;
+                case ProposalOrganizationType.Developers:
+                {
+                    var projectInfo = State.Projects[input.ProjectId];
+                    AssertApprovalCountMeetDeveloperOrganizationThreshold(input.ProjectId,
+                        projectInfo.BudgetPlans.Select(p => p.ReceiverAddress).Distinct().Count());
+                    State.AssociationContract.Release.Send(input.ProposalId);
+                }
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
 
             return new Empty();
@@ -94,12 +107,12 @@ namespace AElf.Contracts.DAOContract
         /// <returns></returns>
         public override Hash ProposeProjectToDAO(ProposeProjectInput input)
         {
-            return ProposeToAddProject(input.PullRequestUrl, input.CommitId);
+            return ProposeToAddProject(input.PullRequestUrl, input.CommitId, ProjectType.Investment);
         }
 
         public override Hash ProposeProjectToParliament(ProposeProjectWithBudgetsInput input)
         {
-            return ProposedToUpdateProjectWithBudgetPlans(input);
+            return ProposedToUpdateProjectWithBudgetPlans(input, ProjectType.Investment);
         }
 
         public override Empty Invest(InvestInput input)
@@ -167,7 +180,11 @@ namespace AElf.Contracts.DAOContract
             // ReSharper disable once PossibleNullReferenceException
             budgetPlan.DeliverPullRequestUrl = input.DeliverPullRequestUrl;
             budgetPlan.DeliverCommitId = input.DeliverCommitId;
-            var proposalId = CreateProposalToSelf(nameof(UpdateInvestmentProject), newProjectInfo.ToByteString());
+            var proposalId =
+                CreateProposalToSelf(
+                    projectInfo.ProjectType == ProjectType.Investment
+                        ? nameof(UpdateInvestmentProject)
+                        : nameof(UpdateRewardProject), newProjectInfo.ToByteString());
             return proposalId;
         }
 
@@ -175,19 +192,19 @@ namespace AElf.Contracts.DAOContract
         {
             Assert(State.DAOMemberList.Value.Value.Contains(Context.Sender),
                 "Only DAO Member can propose reward project.");
-            return ProposeToAddProject(input.PullRequestUrl, input.CommitId);
+            return ProposeToAddProject(input.PullRequestUrl, input.CommitId, ProjectType.Reward);
         }
 
         public override Hash ProposeIssueRewardProject(ProposeProjectWithBudgetsInput input)
         {
             Assert(State.DAOMemberList.Value.Value.Contains(Context.Sender),
                 "Only DAO Member can propose reward project.");
-            return ProposedToUpdateProjectWithBudgetPlans(input);
+            return ProposedToUpdateProjectWithBudgetPlans(input, ProjectType.Reward);
         }
 
         public override Hash ProposeTakeOverRewardProject(ProposeTakeOverRewardProjectInput input)
         {
-            var projectInfo = State.Projects[input.ProjectId];
+            var projectInfo = State.Projects[input.ProjectId].Clone();
             Assert(projectInfo != null, "Project not found.");
             // ReSharper disable once PossibleNullReferenceException
             var takenBudgetPlanIndices = projectInfo.BudgetPlans.Where(p => p.ReceiverAddress != null)
@@ -203,20 +220,40 @@ namespace AElf.Contracts.DAOContract
                 proposeTakenPlan.ReceiverAddress = Context.Sender;
             }
 
+            var status = takenBudgetPlanIndices.Count.Add(input.BudgetPlanIndices.Count) ==
+                         projectInfo.BudgetPlans.Count
+                ? ProjectStatus.Taken
+                : ProjectStatus.Ready;
             return CreateProposalToSelf(nameof(UpdateRewardProject), new ProjectInfo
             {
                 PullRequestUrl = projectInfo.PullRequestUrl,
                 CommitId = projectInfo.CommitId,
                 // If all budget plans are taken, status will be ProjectStatus.Taken, otherwise stay ProjectStatus.Approved.
-                Status = ProjectStatus.Ready,
+                Status = status,
                 BudgetPlans = {projectInfo.BudgetPlans}
             }.ToByteString());
         }
 
         public override Hash ProposeDevelopersAudition(ProposeAuditionInput input)
         {
-
-            return Hash.Empty;
+            var projectInfo = State.Projects[input.ProjectId].Clone();
+            Assert(projectInfo != null, "Project not found.");
+            var developerOrganizationAddress = State.DeveloperOrganizationAddress[input.ProjectId];
+            // ReSharper disable once PossibleNullReferenceException
+            var targetBudgetPlan = projectInfo.BudgetPlans.Single(p => p.Index == input.BudgetPlanIndex);
+            targetBudgetPlan.IsApprovedByDevelopers = true;
+            var newProjectInfo = new ProjectInfo
+            {
+                PullRequestUrl = projectInfo.PullRequestUrl,
+                CommitId = projectInfo.CommitId,
+                CurrentBudgetPlanIndex = projectInfo.CurrentBudgetPlanIndex,
+                PreAuditionHash = projectInfo.PreAuditionHash,
+                Status = projectInfo.Status,
+                BudgetPlans = {targetBudgetPlan}
+            };
+            var proposalId = CreateProposalToDeveloperOrganization(developerOrganizationAddress,
+                nameof(UpdateRewardProject), newProjectInfo.ToByteString());
+            return proposalId;
         }
     }
 }

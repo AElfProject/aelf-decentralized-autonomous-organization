@@ -14,7 +14,7 @@ namespace AElf.Contracts.DAOContract
     // ReSharper disable InconsistentNaming
     public partial class DAOContract
     {
-        private Hash CreateProposalToAssociationContractAndRelease(string methodName, ByteString parameter)
+        private void CreateProposalToAssociationContractAndRelease(string methodName, ByteString parameter)
         {
             var createProposalInput = new CreateProposalInput
             {
@@ -29,8 +29,6 @@ namespace AElf.Contracts.DAOContract
             var proposalId = State.AssociationContract.CreateProposal.Call(createProposalInput);
             State.AssociationContract.Approve.Send(proposalId);
             State.AssociationContract.Release.Send(proposalId);
-
-            return proposalId;
         }
 
         private Hash CreateProposalToParliament(string methodName, ByteString parameter)
@@ -63,12 +61,20 @@ namespace AElf.Contracts.DAOContract
             return proposalId;
         }
 
-        private void AssertApprovedByDecentralizedAutonomousOrganization(ProjectInfo projectInfo)
+        private Hash CreateProposalToDeveloperOrganization(Address developerOrganizationAddress, string methodName,
+            ByteString parameter)
         {
-            var projectId = projectInfo.GetProjectId();
-            var proposalId = State.PreviewProposalIds[projectId];
-            var approvalCount = State.AssociationContract.GetProposal.Call(proposalId).ApprovalCount;
-            AssertApprovalCountMeetThreshold(approvalCount);
+            var createProposalInput = new CreateProposalInput
+            {
+                ContractMethodName = methodName,
+                Params = parameter,
+                OrganizationAddress = developerOrganizationAddress,
+                ExpiredTime = Context.CurrentBlockTime.AddHours(1),
+                ToAddress = Context.Self
+            };
+            State.AssociationContract.CreateProposal.Send(createProposalInput);
+            var proposalId = State.AssociationContract.CreateProposal.Call(createProposalInput);
+            return proposalId;
         }
 
         private void AssertReleasedByParliament()
@@ -85,9 +91,16 @@ namespace AElf.Contracts.DAOContract
             State.ApprovalThreshold.Value = State.DAOMemberList.Value.Value.Count.Mul(2).Div(3).Add(1);
         }
 
-        private void AssertApprovalCountMeetThreshold(long approvalCount)
+        private void AssertApprovalCountMeetDAOThreshold(long approvalCount)
         {
             Assert(approvalCount >= State.ApprovalThreshold.Value, "Not approved by DAO members yet.");
+        }
+
+        private void AssertApprovalCountMeetDeveloperOrganizationThreshold(Hash proposalId, int developerCount)
+        {
+            var proposalInfo = State.AssociationContract.GetProposal.Call(proposalId);
+            // Allow one developer not approve.
+            Assert(proposalInfo.ApprovalCount >= developerCount.Sub(1), "Not approved by other developers");
         }
 
         private Hash CreateProfitScheme(ProjectInfo projectInfo)
@@ -106,12 +119,17 @@ namespace AElf.Contracts.DAOContract
                 CanRemoveBeneficiaryDirectly = true
             });
 
+            return profitSchemeId;
+        }
+
+        private void AddBeneficiaries(ProjectInfo projectInfo)
+        {
             foreach (var budgetPlan in projectInfo.BudgetPlans)
             {
                 Context.SendVirtualInline(projectInfo.GetProjectId(), State.ProfitContract.Value,
                     nameof(State.ProfitContract.AddBeneficiary), new AddBeneficiaryInput
                     {
-                        SchemeId = profitSchemeId,
+                        SchemeId = projectInfo.ProfitSchemeId,
                         EndPeriod = projectInfo.BudgetPlans.Count,
                         BeneficiaryShare = new BeneficiaryShare
                         {
@@ -120,8 +138,6 @@ namespace AElf.Contracts.DAOContract
                         }
                     }.ToByteString());
             }
-
-            return profitSchemeId;
         }
 
         private void PayBudget(ProjectInfo projectInfoIsState, ProjectInfo inputProjectInfo)
@@ -146,7 +162,7 @@ namespace AElf.Contracts.DAOContract
                     Period = projectInfoIsState.CurrentBudgetPlanIndex.Add(1),
                     AmountsMap = {{budgetPlan.Symbol, budgetPlan.Amount}}
                 });
-            
+
             // Update Budget Plan.
             budgetPlan.DeliverPullRequestUrl = inputBudgetPlan.DeliverPullRequestUrl;
             budgetPlan.DeliverCommitId = inputBudgetPlan.DeliverCommitId;
@@ -163,14 +179,15 @@ namespace AElf.Contracts.DAOContract
             // TODO: Some checks about BudgetPlans, like correctness of indices and phases.
         }
 
-        private Hash ProposeToAddProject(string pullRequestUrl, string commitId)
+        private Hash ProposeToAddProject(string pullRequestUrl, string commitId, ProjectType projectType)
         {
             var projectInfo = new ProjectInfo
             {
                 PullRequestUrl = pullRequestUrl,
                 CommitId = commitId,
                 // Initial status of an investment project.
-                Status = ProjectStatus.Proposed
+                Status = ProjectStatus.Proposed,
+                ProjectType = projectType
             };
             var projectId = projectInfo.GetProjectId();
             Assert(State.Projects[projectId] == null, "Project already proposed successfully before.");
@@ -179,18 +196,28 @@ namespace AElf.Contracts.DAOContract
             return proposalId;
         }
 
-        private Hash ProposedToUpdateProjectWithBudgetPlans(ProposeProjectWithBudgetsInput input)
+        private Hash ProposedToUpdateProjectWithBudgetPlans(ProposeProjectWithBudgetsInput input,
+            ProjectType projectType)
         {
             var projectInfo = State.Projects[input.ProjectId];
             Assert(projectInfo != null, "Project not found.");
-            var proposalId = CreateProposalToParliament(nameof(UpdateInvestmentProject), new ProjectInfo
+            if (projectType == ProjectType.Reward)
             {
-                // ReSharper disable once PossibleNullReferenceException
-                PullRequestUrl = projectInfo.PullRequestUrl,
-                CommitId = projectInfo.CommitId,
-                Status = ProjectStatus.Approved,
-                BudgetPlans = {input.BudgetPlans}
-            }.ToByteString());
+                foreach (var budgetPlan in input.BudgetPlans)
+                {
+                    budgetPlan.ReceiverAddress = null;
+                }
+            }
+            var proposalId = CreateProposalToParliament(
+                projectType == ProjectType.Investment ? nameof(UpdateInvestmentProject) : nameof(UpdateRewardProject),
+                new ProjectInfo
+                {
+                    // ReSharper disable once PossibleNullReferenceException
+                    PullRequestUrl = projectInfo.PullRequestUrl,
+                    CommitId = projectInfo.CommitId,
+                    Status = ProjectStatus.Approved,
+                    BudgetPlans = {input.BudgetPlans}
+                }.ToByteString());
             return proposalId;
         }
     }
