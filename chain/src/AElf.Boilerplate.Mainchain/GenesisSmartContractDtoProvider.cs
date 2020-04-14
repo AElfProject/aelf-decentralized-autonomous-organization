@@ -6,7 +6,6 @@ using AElf.Kernel.Consensus.AEDPoS;
 using AElf.Kernel.SmartContract.Application;
 using AElf.OS;
 using AElf.OS.Node.Application;
-using AElf.Types;
 using Microsoft.Extensions.Options;
 
 namespace AElf.Blockchains.MainChain
@@ -43,10 +42,7 @@ namespace AElf.Blockchains.MainChain
                 GetGenesisSmartContractDtosForToken(),
                 GetGenesisSmartContractDtosForConsensus(),
                 GetGenesisSmartContractDtosForConfiguration(),
-                GetGenesisSmartContractDtosForHelloWorld(),
-                GetGenesisSmartContractDtosForBingoGame(),
-                GetGenesisSmartContractDtosForLotteryDemo(),
-                GetGenesisSmartContractDtosForGreeter(),
+                GetGenesisSmartContractDtosForDAO(),
             }.SelectMany(x => x);
         }
     }
