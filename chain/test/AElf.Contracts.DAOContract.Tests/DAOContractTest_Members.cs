@@ -19,10 +19,15 @@ namespace AElf.Contracts.DAOContract
 
         private ParliamentContractContainer.ParliamentContractStub AliceParliamentStub =>
             GetParliamentContractStub(AliceKeyPair);
-
         private DAOContractContainer.DAOContractStub AliceDAOContractStub => GetDAOContractStub(AliceKeyPair);
         private TokenContractContainer.TokenContractStub AliceTokenContractStub => GetTokenContractStub(AliceKeyPair);
         private ProfitContractContainer.ProfitContractStub AliceProfitContractStub => GetProfitContractStub(AliceKeyPair);
+        
+        private ParliamentContractContainer.ParliamentContractStub BobParliamentStub =>
+            GetParliamentContractStub(BobKeyPair);
+        private DAOContractContainer.DAOContractStub BobDAOContractStub => GetDAOContractStub(BobKeyPair);
+        private TokenContractContainer.TokenContractStub BobTokenContractStub => GetTokenContractStub(BobKeyPair);
+        private ProfitContractContainer.ProfitContractStub BobProfitContractStub => GetProfitContractStub(BobKeyPair);
 
         private async Task InitialDAOContract()
         {

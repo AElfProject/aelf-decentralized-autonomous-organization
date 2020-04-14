@@ -162,5 +162,36 @@ namespace AElf.Contracts.DAOContract
         {
             // TODO: Some checks about BudgetPlans, like correctness of indices and phases.
         }
+
+        private Hash ProposeToAddProject(string pullRequestUrl, string commitId)
+        {
+            var projectInfo = new ProjectInfo
+            {
+                PullRequestUrl = pullRequestUrl,
+                CommitId = commitId,
+                // Initial status of an investment project.
+                Status = ProjectStatus.Proposed
+            };
+            var projectId = projectInfo.GetProjectId();
+            Assert(State.Projects[projectId] == null, "Project already proposed successfully before.");
+            var proposalId = CreateProposalToSelf(nameof(AddProject), projectInfo.ToByteString());
+            State.PreviewProposalIds[projectId] = proposalId;
+            return proposalId;
+        }
+
+        private Hash ProposedToUpdateProjectWithBudgetPlans(ProposeProjectWithBudgetsInput input)
+        {
+            var projectInfo = State.Projects[input.ProjectId];
+            Assert(projectInfo != null, "Project not found.");
+            var proposalId = CreateProposalToParliament(nameof(UpdateInvestmentProject), new ProjectInfo
+            {
+                // ReSharper disable once PossibleNullReferenceException
+                PullRequestUrl = projectInfo.PullRequestUrl,
+                CommitId = projectInfo.CommitId,
+                Status = ProjectStatus.Approved,
+                BudgetPlans = {input.BudgetPlans}
+            }.ToByteString());
+            return proposalId;
+        }
     }
 }

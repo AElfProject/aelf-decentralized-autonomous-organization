@@ -94,33 +94,12 @@ namespace AElf.Contracts.DAOContract
         /// <returns></returns>
         public override Hash ProposeProjectToDAO(ProposeProjectInput input)
         {
-            var projectInfo = new ProjectInfo
-            {
-                PullRequestUrl = input.PullRequestUrl,
-                CommitId = input.CommitId,
-                // Initial status of an investment project.
-                Status = ProjectStatus.Proposed
-            };
-            var projectId = projectInfo.GetProjectId();
-            Assert(State.Projects[projectId] == null, "Project already proposed successfully before.");
-            var proposalId = CreateProposalToSelf(nameof(AddInvestmentProject), projectInfo.ToByteString());
-            State.PreviewProposalIds[projectId] = proposalId;
-            return proposalId;
+            return ProposeToAddProject(input.PullRequestUrl, input.CommitId);
         }
 
         public override Hash ProposeProjectToParliament(ProposeProjectWithBudgetsInput input)
         {
-            var projectInfo = State.Projects[input.ProjectId];
-            Assert(projectInfo != null, "Project not found.");
-            var proposalId = CreateProposalToParliament(nameof(UpdateInvestmentProject), new ProjectInfo
-            {
-                // ReSharper disable once PossibleNullReferenceException
-                PullRequestUrl = projectInfo.PullRequestUrl,
-                CommitId = projectInfo.CommitId,
-                Status = ProjectStatus.Approved,
-                BudgetPlans = {input.BudgetPlans}
-            }.ToByteString());
-            return proposalId;
+            return ProposedToUpdateProjectWithBudgetPlans(input);
         }
 
         public override Empty Invest(InvestInput input)
@@ -143,7 +122,7 @@ namespace AElf.Contracts.DAOContract
                     Amount = actualAmount,
                     Symbol = input.Symbol
                 });
-                
+
                 // Update BudgetPlans.
                 // TODO: Possible improve.
                 var remainBudgets = currentBalance.Add(actualAmount);
@@ -180,7 +159,7 @@ namespace AElf.Contracts.DAOContract
                 Status = projectInfo.BudgetPlans.Select(p => p.Index).OrderBy(p => p).Last() == input.BudgetPlanIndex
                     ? ProjectStatus.Delivered
                     : ProjectStatus.Ready,
-                BudgetPlans = { projectInfo.BudgetPlans}
+                BudgetPlans = {projectInfo.BudgetPlans}
             };
 
             var budgetPlan = newProjectInfo.BudgetPlans.SingleOrDefault(p => p.Index == input.BudgetPlanIndex);
@@ -194,28 +173,16 @@ namespace AElf.Contracts.DAOContract
 
         public override Hash ProposeRewardProject(ProposeProjectInput input)
         {
-            var projectInfo = new ProjectInfo
-            {
-                PullRequestUrl = input.PullRequestUrl,
-                CommitId = input.CommitId,
-                // Initial status of an reward project.
-                Status = ProjectStatus.Proposed
-            };
-            var projectId = projectInfo.GetProjectId();
-            Assert(State.Projects[projectId] == null, "Project already proposed successfully before.");
-            var proposalId = CreateProposalToSelf(nameof(AddInvestmentProject), projectInfo.ToByteString());
-            State.PreviewProposalIds[projectId] = proposalId;
-            return proposalId;
+            Assert(State.DAOMemberList.Value.Value.Contains(Context.Sender),
+                "Only DAO Member can propose reward project.");
+            return ProposeToAddProject(input.PullRequestUrl, input.CommitId);
         }
 
-        public override Hash ProposeIssueRewardProject(ProposeIssueRewardProjectInput input)
+        public override Hash ProposeIssueRewardProject(ProposeProjectWithBudgetsInput input)
         {
-            return CreateProposalToSelf(nameof(UpdateRewardProject), new ProjectInfo
-            {
-                PullRequestUrl = input.PullRequestUrl,
-                CommitId = input.CommitId,
-                Status = ProjectStatus.Approved
-            }.ToByteString());
+            Assert(State.DAOMemberList.Value.Value.Contains(Context.Sender),
+                "Only DAO Member can propose reward project.");
+            return ProposedToUpdateProjectWithBudgetPlans(input);
         }
 
         public override Hash ProposeTakeOverRewardProject(ProposeTakeOverRewardProjectInput input)
@@ -241,17 +208,14 @@ namespace AElf.Contracts.DAOContract
                 PullRequestUrl = projectInfo.PullRequestUrl,
                 CommitId = projectInfo.CommitId,
                 // If all budget plans are taken, status will be ProjectStatus.Taken, otherwise stay ProjectStatus.Approved.
-                Status = takenBudgetPlanIndices.Count.Add(input.BudgetPlanIndices.Count) ==
-                         projectInfo.BudgetPlans.Count
-                    ? ProjectStatus.Ready
-                    : ProjectStatus.Approved,
+                Status = ProjectStatus.Ready,
                 BudgetPlans = {projectInfo.BudgetPlans}
             }.ToByteString());
         }
 
         public override Hash ProposeDevelopersAudition(ProposeAuditionInput input)
         {
-            // TODO: Use new states to record audition result.
+
             return Hash.Empty;
         }
     }

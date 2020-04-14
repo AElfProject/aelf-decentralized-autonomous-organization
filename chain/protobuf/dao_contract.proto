@@ -37,8 +37,6 @@ service DAOContract {
     rpc Invest (InvestInput) returns (google.protobuf.Empty) {
     }
     //   Interfaces used by DAO Contract itself.
-    rpc AddInvestmentProject (ProjectInfo) returns (google.protobuf.Empty) {
-    }
     rpc UpdateInvestmentProject (ProjectInfo) returns (google.protobuf.Empty) {
     }
     
@@ -47,7 +45,7 @@ service DAOContract {
     rpc ProposeRewardProject (ProposeProjectInput) returns (aelf.Hash) {
     }
     //   DAO member project a reward project for parliament to approve (after DAO).
-    rpc ProposeIssueRewardProject (ProposeIssueRewardProjectInput) returns (aelf.Hash) {
+    rpc ProposeIssueRewardProject (ProposeProjectWithBudgetsInput) returns (aelf.Hash) {
     }
     //   Developer propose to take over a reward project.
     rpc ProposeTakeOverRewardProject (ProposeTakeOverRewardProjectInput) returns (aelf.Hash) {
@@ -56,14 +54,15 @@ service DAOContract {
     rpc ProposeDevelopersAudition (ProposeAuditionInput) returns (aelf.Hash) {
     }
     //   Interfaces used by DAO Contract itself.
-    rpc AddRewardProject (ProjectInfo) returns (google.protobuf.Empty) {
-    }
     rpc UpdateRewardProject (ProjectInfo) returns (google.protobuf.Empty) {
     }
     
     // Common
     //   Developer propose to deliver project to DAO.
     rpc ProposeDeliver (ProposeAuditionInput) returns (aelf.Hash) {
+    }
+    //   To add a project (either investment project or reward project).
+    rpc AddProject (ProjectInfo) returns (google.protobuf.Empty) {
     }
     
     // Views
@@ -123,12 +122,6 @@ message ProposeAuditionInput {
     int32 budget_plan_index = 4;
 }
 
-message ProposeIssueRewardProjectInput {
-    string pull_request_url = 1;
-    string commit_id = 2;
-    repeated BudgetPlan budget_plans = 3;
-}
-
 message ProposeTakeOverRewardProjectInput {
     aelf.Hash project_id = 1;
     repeated int32 budget_plan_indices = 2;
@@ -156,9 +149,10 @@ message ProjectInfo {
 
 enum ProjectStatus {
     PROPOSED = 0;// Proposed by developer (Investment) or by DAO member (Reward)
-    APPROVED = 1;
-    READY = 2;// Developers start to dev.
-    DELIVERED = 3;
+    APPROVED = 1;// Approved budget plans.
+    READY = 2;// Budgets are ready.
+    TAKEN = 3;// Developers taken this project.
+    DELIVERED = 4;// Developers finished developing.
 }
 
 message InvestInput {
