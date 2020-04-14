@@ -28,6 +28,9 @@ namespace AElf.Contracts.DAOContract
             State.ProfitContract.Value =
                 Context.GetContractAddressByName(SmartContractConstants.ProfitContractSystemName);
 
+            State.ParliamentDefaultAddress.Value =
+                State.ParliamentContract.GetDefaultOrganizationAddress.Call(new Empty());
+
             // Create Decentralized Autonomous Organization via Association Contract.
             var minerList = State.ConsensusContract.GetMinerList.Call(new GetMinerListInput {TermNumber = 1});
             var members = minerList.Pubkeys.Select(p =>
@@ -66,11 +69,21 @@ namespace AElf.Contracts.DAOContract
             return new Empty();
         }
 
-        public override Empty ReleaseProposal(Hash input)
+        public override Empty ReleaseProposal(ReleaseProposalInput input)
         {
-            var proposalInfo = State.AssociationContract.GetProposal.Call(input);
-            AssertApprovalCountMeetThreshold(proposalInfo.ApprovalCount);
-            State.AssociationContract.Release.Send(input);
+            State.CanBeReleased[input.ProjectId] = true;
+
+            if (input.IsParliamentProposal)
+            {
+                State.ParliamentContract.Release.Send(input.ProposalId);
+            }
+            else
+            {
+                var proposalInfo = State.AssociationContract.GetProposal.Call(input.ProposalId);
+                AssertApprovalCountMeetThreshold(proposalInfo.ApprovalCount);
+                State.AssociationContract.Release.Send(input.ProposalId);
+            }
+
             return new Empty();
         }
 
@@ -90,12 +103,12 @@ namespace AElf.Contracts.DAOContract
             };
             var projectId = projectInfo.GetProjectId();
             Assert(State.Projects[projectId] == null, "Project already proposed successfully before.");
-            var proposalId = SelfProposalProcess(nameof(AddInvestmentProject), projectInfo.ToByteString());
+            var proposalId = CreateProposalToSelf(nameof(AddInvestmentProject), projectInfo.ToByteString());
             State.PreviewProposalIds[projectId] = proposalId;
             return proposalId;
         }
 
-        public override Empty ProposeProjectToParliament(ProposeProjectWithBudgetsInput input)
+        public override Hash ProposeProjectToParliament(ProposeProjectWithBudgetsInput input)
         {
             var projectInfo = new ProjectInfo
             {
@@ -106,8 +119,8 @@ namespace AElf.Contracts.DAOContract
             };
             var projectId = projectInfo.GetProjectId();
             Assert(State.Projects[projectId] != null, "Project not found.");
-            SelfProposalProcess(nameof(UpdateInvestmentProject), projectInfo.ToByteString());
-            return new Empty();
+            var proposalId = CreateProposalToParliament(nameof(UpdateInvestmentProject), projectInfo.ToByteString());
+            return proposalId;
         }
 
         public override Empty Invest(InvestInput input)
@@ -147,7 +160,7 @@ namespace AElf.Contracts.DAOContract
             var projectInfoInState = State.Projects[projectInfo.GetProjectId()];
             Assert(projectInfoInState.CurrentBudgetPlanIndex.Add(1) == projectInfo.CurrentBudgetPlanIndex,
                 "Incorrect budget plan index.");
-            SelfProposalProcess(nameof(UpdateInvestmentProject), projectInfo.ToByteString());
+            CreateProposalToSelf(nameof(UpdateInvestmentProject), projectInfo.ToByteString());
             return new Empty();
         }
 
@@ -162,14 +175,14 @@ namespace AElf.Contracts.DAOContract
             };
             var projectId = projectInfo.GetProjectId();
             Assert(State.Projects[projectId] == null, "Project already proposed successfully before.");
-            var proposalId = SelfProposalProcess(nameof(AddInvestmentProject), projectInfo.ToByteString());
+            var proposalId = CreateProposalToSelf(nameof(AddInvestmentProject), projectInfo.ToByteString());
             State.PreviewProposalIds[projectId] = proposalId;
             return proposalId;
         }
 
         public override Empty ProposeIssueRewardProject(ProposeIssueRewardProjectInput input)
         {
-            SelfProposalProcess(nameof(UpdateRewardProject), new ProjectInfo
+            CreateProposalToSelf(nameof(UpdateRewardProject), new ProjectInfo
             {
                 PullRequestUrl = input.PullRequestUrl,
                 CommitId = input.CommitId,
@@ -206,7 +219,7 @@ namespace AElf.Contracts.DAOContract
                     ? ProjectStatus.Taken
                     : ProjectStatus.Approved;
 
-            SelfProposalProcess(nameof(UpdateRewardProject), projectInfo.ToByteString());
+            CreateProposalToSelf(nameof(UpdateRewardProject), projectInfo.ToByteString());
             return new Empty();
         }
 

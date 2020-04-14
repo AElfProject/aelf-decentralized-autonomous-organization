@@ -13,7 +13,7 @@ service DAOContract {
     rpc Initialize (InitializeInput) returns (google.protobuf.Empty) {
     }
     
-    rpc ReleaseProposal (aelf.Hash) returns (google.protobuf.Empty) {
+    rpc ReleaseProposal (ReleaseProposalInput) returns (google.protobuf.Empty) {
     }
     
     // DAO Management
@@ -32,7 +32,7 @@ service DAOContract {
     rpc ProposeProjectToDAO (ProposeProjectInput) returns (aelf.Hash) {
     }
     //   Developer propose a project for parliament to approve (after DAO).
-    rpc ProposeProjectToParliament (ProposeProjectWithBudgetsInput) returns (google.protobuf.Empty) {
+    rpc ProposeProjectToParliament (ProposeProjectWithBudgetsInput) returns (aelf.Hash) {
     }
     rpc Invest (InvestInput) returns (google.protobuf.Empty) {
     }
@@ -76,10 +76,19 @@ service DAOContract {
     rpc GetPreviewProposalId (ProposeProjectInput) returns (aelf.Hash) {
         option (aelf.is_view) = true;
     }
+    rpc GetProjectInfo (aelf.Hash) returns (ProjectInfo) {
+        option (aelf.is_view) = true;
+    }
 }
 
 message InitializeInput {
     int64 deposit_amount = 1;
+}
+
+message ReleaseProposalInput {
+    aelf.Hash project_id = 1;
+    aelf.Hash proposal_id = 2;
+    bool is_parliament_proposal = 3;
 }
 
 message ProposeProjectInput {

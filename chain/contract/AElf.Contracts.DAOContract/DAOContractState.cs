@@ -16,6 +16,8 @@ namespace AElf.Contracts.DAOContract
         internal ParliamentContractContainer.ParliamentContractReferenceState ParliamentContract { get; set; }
         internal TokenContractContainer.TokenContractReferenceState TokenContract { get; set; }
         internal ProfitContractContainer.ProfitContractReferenceState ProfitContract { get; set; }
+        
+        public SingletonState<Address> ParliamentDefaultAddress { get; set; }
 
         public SingletonState<string> DepositSymbol { get; set; }
         public SingletonState<long> DepositAmount { get; set; }
@@ -30,8 +32,13 @@ namespace AElf.Contracts.DAOContract
 
         public SingletonState<Address> OrganizationAddress { get; set; }
 
+        /// <summary>
+        /// Project Id -> Proposal Id
+        /// </summary>
         public MappedState<Hash, Hash> PreviewProposalIds { get; set; }
 
         public SingletonState<long> ApprovalThreshold { get; set; }
+
+        public MappedState<Hash, bool> CanBeReleased { get; set; }
     }
 }

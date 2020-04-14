@@ -26,7 +26,7 @@ namespace AElf.Contracts.DAOContract
 
             var memberList = State.DAOMemberList.Value;
             memberList.Value.Add(joinAddress);
-            SelfProposalProcess(nameof(State.AssociationContract.ChangeOrganizationMember), new OrganizationMemberList
+            CreateProposalToAssociationContractAndRelease(nameof(State.AssociationContract.ChangeOrganizationMember), new OrganizationMemberList
             {
                 OrganizationMembers = {memberList.Value}
             }.ToByteString());
@@ -51,7 +51,7 @@ namespace AElf.Contracts.DAOContract
             Assert(memberList.Value.Contains(Context.Sender), $"DAO Member {Context.Sender} not found.");
             memberList.Value.Remove(Context.Sender);
             memberList.Value.Remove(Context.Sender);
-            SelfProposalProcess(nameof(State.AssociationContract.ChangeOrganizationMember), new OrganizationMemberList
+            CreateProposalToAssociationContractAndRelease(nameof(State.AssociationContract.ChangeOrganizationMember), new OrganizationMemberList
             {
                 OrganizationMembers = {memberList.Value}
             }.ToByteString());
@@ -66,7 +66,7 @@ namespace AElf.Contracts.DAOContract
             var quitAddress = Address.FromPublicKey(ByteArrayHelper.HexStringToByteArray(input.Value));
             Assert(memberList.Value.Contains(quitAddress), $"DAO Member {input.Value} not found.");
             memberList.Value.Remove(quitAddress);
-            SelfProposalProcess(nameof(State.AssociationContract.ChangeOrganizationMember), new OrganizationMemberList
+            CreateProposalToAssociationContractAndRelease(nameof(State.AssociationContract.ChangeOrganizationMember), new OrganizationMemberList
             {
                 OrganizationMembers = {memberList.Value}
             }.ToByteString());

@@ -8,6 +8,7 @@ using AElf.Contracts.Association;
 using AElf.Contracts.Consensus.AEDPoS;
 using AElf.Contracts.MultiToken;
 using AElf.Contracts.Parliament;
+using AElf.Contracts.Profit;
 using AElf.Contracts.TestKit;
 using AElf.Cryptography.ECDSA;
 using AElf.Kernel;
@@ -29,6 +30,7 @@ namespace AElf.Contracts.DAOContract
         internal TokenContractContainer.TokenContractStub TokenContractStub { get; set; }
         internal ParliamentContractContainer.ParliamentContractStub ParliamentContractStub { get; set; }
         internal AssociationContractContainer.AssociationContractStub AssociationContractStub { get; set; }
+        internal ProfitContractContainer.ProfitContractStub ProfitContractStub { get; set; }
         private ACS0Container.ACS0Stub ZeroContractStub { get; set; }
 
         internal ECKeyPair AliceKeyPair { get; set; } = SampleECKeyPairs.KeyPairs.Last();
@@ -41,6 +43,7 @@ namespace AElf.Contracts.DAOContract
         internal Address ParliamentContractAddress { get; set; }
         internal Address AssociationContractAddress { get; set; }
         internal Address ConsensusContractAddress { get; set; }
+        internal Address ProfitContractAddress { get; set; }
 
         protected DAOContractTestBase()
         {
@@ -50,6 +53,18 @@ namespace AElf.Contracts.DAOContract
         private void InitializeContracts()
         {
             ZeroContractStub = GetZeroContractStub(DefaultKeyPair);
+            
+            ProfitContractAddress = AsyncHelper.RunSync(() =>
+                ZeroContractStub.DeploySystemSmartContract.SendAsync(
+                    new SystemContractDeploymentInput
+                    {
+                        Category = KernelConstants.DefaultRunnerCategory,
+                        Code = ByteString.CopyFrom(File.ReadAllBytes(typeof(ProfitContract).Assembly.Location)),
+                        Name = ProfitSmartContractAddressNameProvider.Name,
+                        TransactionMethodCallList =
+                            new SystemContractDeploymentInput.Types.SystemTransactionMethodCallList()
+                    })).Output;
+            ProfitContractStub = GetProfitContractStub(DefaultKeyPair);
 
             AssociationContractAddress = AsyncHelper.RunSync(() =>
                 ZeroContractStub.DeploySystemSmartContract.SendAsync(
@@ -103,7 +118,7 @@ namespace AElf.Contracts.DAOContract
                         Category = KernelConstants.DefaultRunnerCategory,
                         Code =
                             ByteString.CopyFrom(File.ReadAllBytes(typeof(DAOContract).Assembly.Location)),
-                        Name = ProfitSmartContractAddressNameProvider.Name,
+                        Name = Hash.FromString("AElf.ContractNames.DAOContract"),
                         TransactionMethodCallList =
                             new SystemContractDeploymentInput.Types.SystemTransactionMethodCallList()
                     })).Output;
@@ -138,6 +153,11 @@ namespace AElf.Contracts.DAOContract
         internal AEDPoSContractContainer.AEDPoSContractStub GetConsensusContractStub(ECKeyPair keyPair)
         {
             return GetTester<AEDPoSContractContainer.AEDPoSContractStub>(TokenContractAddress, keyPair);
+        }
+        
+        internal ProfitContractContainer.ProfitContractStub GetProfitContractStub(ECKeyPair keyPair)
+        {
+            return GetTester<ProfitContractContainer.ProfitContractStub>(ProfitContractAddress, keyPair);
         }
 
         private SystemContractDeploymentInput.Types.SystemTransactionMethodCallList GetTokenContractMethodCallList()
@@ -223,6 +243,16 @@ namespace AElf.Contracts.DAOContract
             {
                 var parliamentContractStub = GetParliamentContractStub(keyPair);
                 var approveResult = await parliamentContractStub.Approve.SendAsync(proposalId);
+                approveResult.TransactionResult.Status.ShouldBe(TransactionResultStatus.Mined);
+            }
+        }
+        
+        internal async Task DAOApproveAsync(Hash proposalId)
+        {
+            foreach (var keyPair in InitialMinerKeyPairs)
+            {
+                var associationContractStub = GetAssociationContractStub(keyPair);
+                var approveResult = await associationContractStub.Approve.SendAsync(proposalId);
                 approveResult.TransactionResult.Status.ShouldBe(TransactionResultStatus.Mined);
             }
         }

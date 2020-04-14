@@ -9,8 +9,8 @@ namespace AElf.Contracts.DAOContract
     {
         public override Empty AddInvestmentProject(ProjectInfo input)
         {
-            AssertApprovedByDecentralizedAutonomousOrganization(input);
             var projectId = input.GetProjectId();
+            CheckProjectProposalCanBeReleased(projectId);
             input.VirtualAddress = Context.ConvertVirtualAddressToContractAddress(projectId);
             State.Projects[projectId] = input;
             return new Empty();
@@ -18,8 +18,8 @@ namespace AElf.Contracts.DAOContract
 
         public override Empty UpdateInvestmentProject(ProjectInfo input)
         {
-            AssertApprovedByDecentralizedAutonomousOrganization(input);
             var projectId = input.GetProjectId();
+            CheckProjectProposalCanBeReleased(projectId);
             var currentProject = State.Projects[projectId];
             currentProject.Status = input.Status;
 
@@ -64,8 +64,8 @@ namespace AElf.Contracts.DAOContract
 
         public override Empty AddRewardProject(ProjectInfo input)
         {
-            AssertApprovedByDecentralizedAutonomousOrganization(input);
             var projectId = input.GetProjectId();
+            CheckProjectProposalCanBeReleased(projectId);
             input.VirtualAddress = Context.ConvertVirtualAddressToContractAddress(projectId);
             State.Projects[projectId] = input;
             return new Empty();
@@ -73,8 +73,8 @@ namespace AElf.Contracts.DAOContract
 
         public override Empty UpdateRewardProject(ProjectInfo input)
         {
-            AssertApprovedByDecentralizedAutonomousOrganization(input);
             var projectId = input.GetProjectId();
+            CheckProjectProposalCanBeReleased(projectId);
             var currentProject = State.Projects[projectId];
             currentProject.Status = input.Status;
             

@@ -51,6 +51,9 @@
         <ContractStub Include="..\..\protobuf\aedpos_contract.proto">
             <Link>Protobuf\Proto\aedpos_contract.proto</Link>
         </ContractStub>
+        <ContractStub Include="..\..\protobuf\profit_contract.proto">
+            <Link>Protobuf\Proto\profit_contract.proto</Link>
+        </ContractStub>
     </ItemGroup>
 
     <ItemGroup>
@@ -60,7 +63,6 @@
         <PackageReference Include="AElf.Contracts.MultiToken" Version="1.0.0-preview1" />
         <PackageReference Include="AElf.Contracts.Association" Version="1.0.0-preview1" />
         <PackageReference Include="AElf.Contracts.Parliament" Version="1.0.0-preview1" />
+        <PackageReference Include="AElf.Contracts.Profit" Version="1.0.0-preview1" />
     </ItemGroup>
-    
-
 </Project>

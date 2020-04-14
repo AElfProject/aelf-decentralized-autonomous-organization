@@ -30,5 +30,10 @@ namespace AElf.Contracts.DAOContract
             };
             return State.PreviewProposalIds[projectInfo.GetProjectId()];
         }
+
+        public override ProjectInfo GetProjectInfo(Hash input)
+        {
+            return State.Projects[input];
+        }
     }
 }

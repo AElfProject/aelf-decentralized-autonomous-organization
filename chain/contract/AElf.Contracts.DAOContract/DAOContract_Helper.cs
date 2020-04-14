@@ -13,7 +13,7 @@ namespace AElf.Contracts.DAOContract
     // ReSharper disable InconsistentNaming
     public partial class DAOContract
     {
-        private Hash SelfProposalProcess(string methodName, ByteString parameter)
+        private Hash CreateProposalToAssociationContractAndRelease(string methodName, ByteString parameter)
         {
             var createProposalInput = new CreateProposalInput
             {
@@ -29,6 +29,36 @@ namespace AElf.Contracts.DAOContract
             State.AssociationContract.Approve.Send(proposalId);
             State.AssociationContract.Release.Send(proposalId);
 
+            return proposalId;
+        }
+        
+        private Hash CreateProposalToParliament(string methodName, ByteString parameter)
+        {
+            var createProposalInput = new CreateProposalInput
+            {
+                ContractMethodName = methodName,
+                Params = parameter,
+                OrganizationAddress = State.ParliamentDefaultAddress.Value,
+                ExpiredTime = Context.CurrentBlockTime.AddHours(1),
+                ToAddress = Context.Self
+            };
+            State.ParliamentContract.CreateProposal.Send(createProposalInput);
+            var proposalId = State.ParliamentContract.CreateProposal.Call(createProposalInput);
+            return proposalId;
+        }
+
+        private Hash CreateProposalToSelf(string methodName, ByteString parameter)
+        {
+            var createProposalInput = new CreateProposalInput
+            {
+                ContractMethodName = methodName,
+                Params = parameter,
+                OrganizationAddress = State.OrganizationAddress.Value,
+                ExpiredTime = Context.CurrentBlockTime.AddHours(1),
+                ToAddress = Context.Self
+            };
+            State.AssociationContract.CreateProposal.Send(createProposalInput);
+            var proposalId = State.AssociationContract.CreateProposal.Call(createProposalInput);
             return proposalId;
         }
 
@@ -68,10 +98,12 @@ namespace AElf.Contracts.DAOContract
                 CanRemoveBeneficiaryDirectly = true
             });
 
-            var profitSchemeId = State.ProfitContract.GetManagingSchemeIds.Call(new GetManagingSchemeIdsInput
+            var profitSchemeId = State.ProfitContract.CreateScheme.Call(new CreateSchemeInput
             {
-                Manager = projectInfo.VirtualAddress
-            }).SchemeIds.Last();
+                Manager = projectInfo.VirtualAddress,
+                IsReleaseAllBalanceEveryTimeByDefault = true,
+                CanRemoveBeneficiaryDirectly = true
+            });
 
             foreach (var budgetPlan in projectInfo.BudgetPlans)
             {
@@ -108,6 +140,12 @@ namespace AElf.Contracts.DAOContract
                     Period = projectInfo.CurrentBudgetPlanIndex.Add(1),
                     AmountsMap = {{budgetPlan.Symbol, budgetPlan.Amount}}
                 });
+        }
+
+        private void CheckProjectProposalCanBeReleased(Hash projectId)
+        {
+            Assert(State.CanBeReleased[projectId], "Not ready to release any proposal.");
+            State.CanBeReleased.Remove(projectId);
         }
     }
 }
