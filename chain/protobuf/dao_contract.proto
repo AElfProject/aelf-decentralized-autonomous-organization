@@ -47,13 +47,13 @@ service DAOContract {
     rpc ProposeRewardProject (ProposeProjectInput) returns (aelf.Hash) {
     }
     //   DAO member project a reward project for parliament to approve (after DAO).
-    rpc ProposeIssueRewardProject (ProposeIssueRewardProjectInput) returns (google.protobuf.Empty) {
+    rpc ProposeIssueRewardProject (ProposeIssueRewardProjectInput) returns (aelf.Hash) {
     }
     //   Developer propose to take over a reward project.
-    rpc ProposeTakeOverRewardProject (ProposeTakeOverRewardProjectInput) returns (google.protobuf.Empty) {
+    rpc ProposeTakeOverRewardProject (ProposeTakeOverRewardProjectInput) returns (aelf.Hash) {
     }
     //   Developer propose an audition for all developers to approve.
-    rpc ProposeDevelopersAudition (ProposeAuditionInput) returns (google.protobuf.Empty) {
+    rpc ProposeDevelopersAudition (ProposeAuditionInput) returns (aelf.Hash) {
     }
     //   Interfaces used by DAO Contract itself.
     rpc AddRewardProject (ProjectInfo) returns (google.protobuf.Empty) {
@@ -63,7 +63,7 @@ service DAOContract {
     
     // Common
     //   Developer propose to deliver project to DAO.
-    rpc ProposeDeliver (ProposeAuditionInput) returns (google.protobuf.Empty) {
+    rpc ProposeDeliver (ProposeAuditionInput) returns (aelf.Hash) {
     }
     
     // Views
@@ -77,6 +77,9 @@ service DAOContract {
         option (aelf.is_view) = true;
     }
     rpc GetProjectInfo (aelf.Hash) returns (ProjectInfo) {
+        option (aelf.is_view) = true;
+    }
+    rpc CalculateProjectId (ProposeProjectInput) returns (aelf.Hash) {
         option (aelf.is_view) = true;
     }
 }
@@ -98,9 +101,8 @@ message ProposeProjectInput {
 }
 
 message ProposeProjectWithBudgetsInput {
-    string pull_request_url = 1;
-    string commit_id = 2;
-    repeated BudgetPlan budget_plans = 3;
+    aelf.Hash project_id = 1;
+    repeated BudgetPlan budget_plans = 2;
 }
 
 message BudgetPlan {
@@ -109,17 +111,16 @@ message BudgetPlan {
     string symbol = 3;
     int64 amount = 4;
     aelf.Address receiver_address = 5;
+    int64 paid_in_amount = 6;
+    string deliver_pull_request_url = 7;
+    string deliver_commit_id = 8;
 }
 
 message ProposeAuditionInput {
-    string pull_request_url = 1;
-    string commit_id = 2;
-    int32 budget_plan_index = 3;
-}
-
-message ProposeDeliverInput {
-    string pull_request_url = 1;
-    string commit_id = 2;
+    aelf.Hash project_id = 1;
+    string deliver_pull_request_url = 2;
+    string deliver_commit_id = 3;
+    int32 budget_plan_index = 4;
 }
 
 message ProposeIssueRewardProjectInput {
@@ -129,9 +130,8 @@ message ProposeIssueRewardProjectInput {
 }
 
 message ProposeTakeOverRewardProjectInput {
-    string pull_request_url = 1;
-    string commit_id = 2;
-    repeated int32 budget_plan_indices = 3;
+    aelf.Hash project_id = 1;
+    repeated int32 budget_plan_indices = 2;
 }
 
 message MemberList {
@@ -139,9 +139,8 @@ message MemberList {
 }
 
 message GetBudgetPlanInput {
-    string pull_request_url = 1;
-    string commit_id = 2;
-    int32 budget_plan_index = 3;
+    aelf.Hash project_id = 1;
+    int32 budget_plan_index = 2;
 }
 
 message ProjectInfo {
@@ -158,7 +157,7 @@ message ProjectInfo {
 enum ProjectStatus {
     PROPOSED = 0;// Proposed by developer (Investment) or by DAO member (Reward)
     APPROVED = 1;
-    TAKEN = 2;// Developers start to dev.
+    READY = 2;// Developers start to dev.
     DELIVERED = 3;
 }
 

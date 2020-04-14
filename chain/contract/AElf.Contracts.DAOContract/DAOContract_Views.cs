@@ -1,3 +1,4 @@
+using System.Linq;
 using AElf.Types;
 using Google.Protobuf.WellKnownTypes;
 
@@ -8,7 +9,10 @@ namespace AElf.Contracts.DAOContract
     {
         public override BudgetPlan GetBudgetPlan(GetBudgetPlanInput input)
         {
-            return new BudgetPlan();
+            var projectInfo = State.Projects[input.ProjectId];
+            Assert(projectInfo != null, "Project not found.");
+            // ReSharper disable once PossibleNullReferenceException
+            return projectInfo.BudgetPlans.Single(p => p.Index == input.BudgetPlanIndex);
         }
 
         public override MemberList GetDAOMemberList(Empty input)
@@ -34,6 +38,15 @@ namespace AElf.Contracts.DAOContract
         public override ProjectInfo GetProjectInfo(Hash input)
         {
             return State.Projects[input];
+        }
+
+        public override Hash CalculateProjectId(ProposeProjectInput input)
+        {
+            return new ProjectInfo
+            {
+                PullRequestUrl = input.PullRequestUrl,
+                CommitId = input.CommitId
+            }.GetProjectId();
         }
     }
 }

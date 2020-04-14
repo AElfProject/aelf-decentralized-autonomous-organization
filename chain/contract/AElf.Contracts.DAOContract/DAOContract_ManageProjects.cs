@@ -11,8 +11,13 @@ namespace AElf.Contracts.DAOContract
         {
             var projectId = input.GetProjectId();
             CheckProjectProposalCanBeReleased(projectId);
-            input.VirtualAddress = Context.ConvertVirtualAddressToContractAddress(projectId);
-            State.Projects[projectId] = input;
+            State.Projects[projectId] = new ProjectInfo
+            {
+                PullRequestUrl = input.PullRequestUrl,
+                CommitId = input.CommitId,
+                PreAuditionHash = input.PreAuditionHash,
+                VirtualAddress = Context.ConvertVirtualAddressToContractAddress(projectId)
+            };
             return new Empty();
         }
 
@@ -21,7 +26,6 @@ namespace AElf.Contracts.DAOContract
             var projectId = input.GetProjectId();
             CheckProjectProposalCanBeReleased(projectId);
             var currentProject = State.Projects[projectId];
-            currentProject.Status = input.Status;
 
             if (input.CurrentBudgetPlanIndex > 0)
             {
@@ -30,34 +34,30 @@ namespace AElf.Contracts.DAOContract
 
             if (input.Status == ProjectStatus.Approved && currentProject.ProfitSchemeId == null)
             {
-                foreach (var budgetPlan in input.BudgetPlans)
-                {
-                    State.BudgetPlans[projectId][budgetPlan.Index] = budgetPlan;
-                }
-                var profitSchemeId = CreateProfitScheme(input);
+                CheckBudgetPlans(input.BudgetPlans);
+                currentProject.BudgetPlans.AddRange(input.BudgetPlans);
+                var profitSchemeId = CreateProfitScheme(currentProject);
                 currentProject.ProfitSchemeId = profitSchemeId;
             }
 
-            if (input.Status == ProjectStatus.Taken)
+            if (input.Status == ProjectStatus.Ready || input.Status == ProjectStatus.Delivered)
             {
-                if (input.CurrentBudgetPlanIndex > 0)
+                if (currentProject.Status == ProjectStatus.Ready)
                 {
-                    PayBudget(input);
-                }
-
-                if (input.CurrentBudgetPlanIndex.Add(1) == input.BudgetPlans.Count)
-                {
-                    State.PreviewProposalIds.Remove(projectId);
+                    PayBudget(currentProject, input);
                 }
             }
 
             if (input.Status == ProjectStatus.Delivered)
             {
+                State.PreviewProposalIds.Remove(projectId);
+
                 // TODO: Maintain beneficiaries for sender.
                 // Once a project is DELIVERED, beneficiaries will be investors.
                 // If symbols are diff for every budget plan, may need to calculate weight.
             }
 
+            currentProject.Status = input.Status;
             State.Projects[projectId] = currentProject;
             return new Empty();
         }
@@ -77,7 +77,7 @@ namespace AElf.Contracts.DAOContract
             CheckProjectProposalCanBeReleased(projectId);
             var currentProject = State.Projects[projectId];
             currentProject.Status = input.Status;
-            
+
             if (input.CurrentBudgetPlanIndex > 0)
             {
                 currentProject.CurrentBudgetPlanIndex = input.CurrentBudgetPlanIndex;
@@ -102,19 +102,19 @@ namespace AElf.Contracts.DAOContract
                 }
             }
 
-            if (input.Status == ProjectStatus.Taken)
+            if (input.Status == ProjectStatus.Ready)
             {
                 if (input.CurrentBudgetPlanIndex > 0)
                 {
-                    PayBudget(input);
-                }
-                
-                if (input.CurrentBudgetPlanIndex.Add(1) == input.BudgetPlans.Count)
-                {
-                    State.PreviewProposalIds.Remove(projectId);
+                    PayBudget(currentProject, input);
                 }
             }
-            
+
+            if (input.Status == ProjectStatus.Delivered)
+            {
+                State.PreviewProposalIds.Remove(projectId);
+            }
+
             State.Projects[projectId] = currentProject;
             return new Empty();
         }

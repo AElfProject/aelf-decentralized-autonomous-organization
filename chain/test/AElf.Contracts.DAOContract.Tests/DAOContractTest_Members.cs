@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using Acs3;
 using AElf.Contracts.MultiToken;
 using AElf.Contracts.Parliament;
+using AElf.Contracts.Profit;
 using AElf.CSharp.Core.Extension;
 using AElf.Kernel;
 using Google.Protobuf;
@@ -21,6 +22,7 @@ namespace AElf.Contracts.DAOContract
 
         private DAOContractContainer.DAOContractStub AliceDAOContractStub => GetDAOContractStub(AliceKeyPair);
         private TokenContractContainer.TokenContractStub AliceTokenContractStub => GetTokenContractStub(AliceKeyPair);
+        private ProfitContractContainer.ProfitContractStub AliceProfitContractStub => GetProfitContractStub(AliceKeyPair);
 
         private async Task InitialDAOContract()
         {

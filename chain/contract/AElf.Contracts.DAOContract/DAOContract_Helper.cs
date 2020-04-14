@@ -6,6 +6,7 @@ using AElf.CSharp.Core.Extension;
 using AElf.Sdk.CSharp;
 using AElf.Types;
 using Google.Protobuf;
+using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;
 
 namespace AElf.Contracts.DAOContract
@@ -31,7 +32,7 @@ namespace AElf.Contracts.DAOContract
 
             return proposalId;
         }
-        
+
         private Hash CreateProposalToParliament(string methodName, ByteString parameter)
         {
             var createProposalInput = new CreateProposalInput
@@ -107,45 +108,59 @@ namespace AElf.Contracts.DAOContract
 
             foreach (var budgetPlan in projectInfo.BudgetPlans)
             {
-                State.ProfitContract.AddBeneficiary.Send(new AddBeneficiaryInput
-                {
-                    SchemeId = profitSchemeId,
-                    EndPeriod = projectInfo.BudgetPlans.Count,
-                    BeneficiaryShare = new BeneficiaryShare
+                Context.SendVirtualInline(projectInfo.GetProjectId(), State.ProfitContract.Value,
+                    nameof(State.ProfitContract.AddBeneficiary), new AddBeneficiaryInput
                     {
-                        Beneficiary = budgetPlan.ReceiverAddress,
-                        Shares = 1
-                    }
-                });
+                        SchemeId = profitSchemeId,
+                        EndPeriod = projectInfo.BudgetPlans.Count,
+                        BeneficiaryShare = new BeneficiaryShare
+                        {
+                            Beneficiary = budgetPlan.ReceiverAddress,
+                            Shares = 1
+                        }
+                    }.ToByteString());
             }
 
             return profitSchemeId;
         }
 
-        private void PayBudget(ProjectInfo projectInfo)
+        private void PayBudget(ProjectInfo projectInfoIsState, ProjectInfo inputProjectInfo)
         {
-            var projectId = projectInfo.GetProjectId();
-            var budgetPlan = State.BudgetPlans[projectId][projectInfo.CurrentBudgetPlanIndex];
+            var projectId = inputProjectInfo.GetProjectId();
+            var budgetPlan =
+                projectInfoIsState.BudgetPlans.Single(p => p.Index == inputProjectInfo.CurrentBudgetPlanIndex);
+            var inputBudgetPlan =
+                inputProjectInfo.BudgetPlans.Single(p => p.Index == inputProjectInfo.CurrentBudgetPlanIndex);
+            Assert(budgetPlan.PaidInAmount == budgetPlan.Amount, "Budget not ready.");
             Context.SendVirtualInline(projectId, State.ProfitContract.Value,
                 nameof(State.ProfitContract.ContributeProfits), new ContributeProfitsInput
                 {
-                    SchemeId = projectInfo.ProfitSchemeId,
+                    SchemeId = projectInfoIsState.ProfitSchemeId,
                     Symbol = budgetPlan.Symbol,
                     Amount = budgetPlan.Amount
                 });
             Context.SendVirtualInline(projectId, State.ProfitContract.Value,
                 nameof(State.ProfitContract.DistributeProfits), new DistributeProfitsInput
                 {
-                    SchemeId = projectInfo.ProfitSchemeId,
-                    Period = projectInfo.CurrentBudgetPlanIndex.Add(1),
+                    SchemeId = projectInfoIsState.ProfitSchemeId,
+                    Period = projectInfoIsState.CurrentBudgetPlanIndex.Add(1),
                     AmountsMap = {{budgetPlan.Symbol, budgetPlan.Amount}}
                 });
+            
+            // Update Budget Plan.
+            budgetPlan.DeliverPullRequestUrl = inputBudgetPlan.DeliverPullRequestUrl;
+            budgetPlan.DeliverCommitId = inputBudgetPlan.DeliverCommitId;
         }
 
         private void CheckProjectProposalCanBeReleased(Hash projectId)
         {
             Assert(State.CanBeReleased[projectId], "Not ready to release any proposal.");
             State.CanBeReleased.Remove(projectId);
+        }
+
+        private void CheckBudgetPlans(RepeatedField<BudgetPlan> budgetPlans)
+        {
+            // TODO: Some checks about BudgetPlans, like correctness of indices and phases.
         }
     }
 }

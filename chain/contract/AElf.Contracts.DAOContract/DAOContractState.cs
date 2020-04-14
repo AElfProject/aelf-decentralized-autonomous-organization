@@ -25,11 +25,6 @@ namespace AElf.Contracts.DAOContract
 
         public MappedState<Hash, ProjectInfo> Projects { get; set; }
 
-        /// <summary>
-        /// Project Id -> Budget Index -> BudgetPlan
-        /// </summary>
-        public MappedState<Hash, int, BudgetPlan> BudgetPlans { get; set; }
-
         public SingletonState<Address> OrganizationAddress { get; set; }
 
         /// <summary>

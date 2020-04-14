@@ -1,5 +1,8 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using AElf.Contracts.Consensus.AEDPoS;
+using AElf.Contracts.MultiToken;
+using AElf.Contracts.Profit;
 using AElf.Sdk.CSharp;
 using AElf.Types;
 using Shouldly;
@@ -9,8 +12,12 @@ namespace AElf.Contracts.DAOContract
 {
     public partial class DaoContractTest
     {
-        private const string PullRequestUrl = "https://github.com/AElfProject/AElf/pull/66666";
-        private const string CommitId = "747899be26019c8207222719c4535a9f7011aab9";
+        private const string InvestmentProjectPullRequestUrl = "https://github.com/AElfProject/AElf/pull/111111";
+        private const string InvestmentProjectCommitId = "investmentprojectcommitid";
+        private const string InvestmentProjectDeliverPullRequestUrl = "https://github.com/AElfProject/AElf/pull/222222";
+        private const string InvestmentProjectDeliverCommitId = "investmentprojectdelivercommitid";
+
+        private const long InvestAmount = 1000_00000000;
 
         private List<BudgetPlan> BudgetPlans => new List<BudgetPlan>
         {
@@ -32,15 +39,14 @@ namespace AElf.Contracts.DAOContract
             // Alice want to propose a project to DAO.
             var proposalId = (await AliceDAOContractStub.ProposeProjectToDAO.SendAsync(new ProposeProjectInput
             {
-                PullRequestUrl = PullRequestUrl,
-                CommitId = CommitId
+                PullRequestUrl = InvestmentProjectPullRequestUrl,
+                CommitId = InvestmentProjectCommitId
             })).Output;
 
             // Check proposal exists and correct.
             var proposalInfo = await AssociationContractStub.GetProposal.CallAsync(proposalId);
             proposalInfo.ContractMethodName.ShouldBe(nameof(DAOContractStub.AddInvestmentProject));
             proposalInfo.ToAddress.ShouldBe(DAOContractAddress);
-            proposalInfo.Proposer.ShouldBe(DAOContractAddress);
 
             return proposalId;
         }
@@ -49,7 +55,11 @@ namespace AElf.Contracts.DAOContract
         public async Task<Hash> ProposeProjectToDAO_Approve_Test()
         {
             var proposalId = await ProposeProjectToDAO_Test();
-            var projectId = Hash.FromString(CommitId.Append(PullRequestUrl));
+            var projectId = await DAOContractStub.CalculateProjectId.CallAsync(new ProposeProjectInput
+            {
+                PullRequestUrl = InvestmentProjectPullRequestUrl,
+                CommitId = InvestmentProjectCommitId
+            });
 
             await DAOApproveAsync(proposalId);
             // Anyone call this method to release this proposal.
@@ -61,9 +71,10 @@ namespace AElf.Contracts.DAOContract
 
             // Check project info.
             var projectInfo = await DAOContractStub.GetProjectInfo.CallAsync(projectId);
-            projectInfo.PullRequestUrl.ShouldBe(PullRequestUrl);
-            projectInfo.CommitId.ShouldBe(CommitId);
+            projectInfo.PullRequestUrl.ShouldBe(InvestmentProjectPullRequestUrl);
+            projectInfo.CommitId.ShouldBe(InvestmentProjectCommitId);
             projectInfo.VirtualAddress.ShouldNotBeNull();
+            projectInfo.Status.ShouldBe(ProjectStatus.Proposed);
 
             return projectId;
         }
@@ -77,11 +88,12 @@ namespace AElf.Contracts.DAOContract
             var result = await AliceDAOContractStub.ProposeProjectToParliament.SendAsync(
                 new ProposeProjectWithBudgetsInput
                 {
-                    PullRequestUrl = PullRequestUrl,
-                    CommitId = CommitId,
+                    ProjectId = projectId,
                     BudgetPlans = {BudgetPlans}
                 });
             var proposalId = result.Output;
+
+            await CheckProjectStatus(projectId, ProjectStatus.Proposed);
 
             await ParliamentApproveAsync(proposalId);
 
@@ -95,8 +107,8 @@ namespace AElf.Contracts.DAOContract
 
             // Check project info.
             var projectInfo = await DAOContractStub.GetProjectInfo.CallAsync(projectId);
-            projectInfo.PullRequestUrl.ShouldBe(PullRequestUrl);
-            projectInfo.CommitId.ShouldBe(CommitId);
+            projectInfo.PullRequestUrl.ShouldBe(InvestmentProjectPullRequestUrl);
+            projectInfo.CommitId.ShouldBe(InvestmentProjectCommitId);
             projectInfo.Status.ShouldBe(ProjectStatus.Approved);
             projectInfo.ProfitSchemeId.ShouldNotBeNull();
             projectInfo.BudgetPlans.ShouldBe(BudgetPlans);
@@ -106,16 +118,104 @@ namespace AElf.Contracts.DAOContract
         }
 
         [Fact]
-        public async Task InvestToInvestmentProjectTest()
+        public async Task<Hash> InvestToInvestmentProjectTest()
         {
             var projectId = await ProposeProjectToParliament_Test();
+
+            await CheckProjectStatus(projectId, ProjectStatus.Approved);
+
+            await AliceTokenContractStub.Approve.SendAsync(new ApproveInput
+            {
+                Spender = DAOContractAddress,
+                Symbol = "ELF",
+                Amount = InvestAmount
+            });
             await AliceDAOContractStub.Invest.SendAsync(new InvestInput
             {
                 ProjectId = projectId,
                 Symbol = "ELF",
-                Amount = 1000_00000000
+                Amount = InvestAmount
             });
+
+            var budgetPlan = await DAOContractStub.GetBudgetPlan.CallAsync(new GetBudgetPlanInput
+            {
+                ProjectId = projectId,
+                BudgetPlanIndex = 0
+            });
+            budgetPlan.Amount.ShouldBe(InvestAmount);
+            budgetPlan.PaidInAmount.ShouldBe(InvestAmount);
+            budgetPlan.Phase.ShouldBe(1);
             
+            await CheckProjectStatus(projectId, ProjectStatus.Ready);
+
+            return projectId;
+        }
+
+        [Fact]
+        public async Task DeliverProjectTest()
+        {
+            var projectId = await InvestToInvestmentProjectTest();
+
+            // Alice want to deliver project.
+            var proposalId = (await AliceDAOContractStub.ProposeDeliver.SendAsync(new ProposeAuditionInput
+            {
+                ProjectId = projectId,
+                DeliverPullRequestUrl = InvestmentProjectDeliverPullRequestUrl,
+                DeliverCommitId = InvestmentProjectDeliverCommitId,
+                BudgetPlanIndex = 0
+            })).Output;
+
+            await CheckProjectStatus(projectId, ProjectStatus.Ready);
+
+            await DAOApproveAsync(proposalId);
+            await DAOContractStub.ReleaseProposal.SendAsync(new ReleaseProposalInput
+            {
+                ProjectId = projectId,
+                ProposalId = proposalId,
+            });
+
+            await CheckProjectStatus(projectId, ProjectStatus.Delivered);
+
+            var budgetPlan = await DAOContractStub.GetBudgetPlan.CallAsync(new GetBudgetPlanInput
+            {
+                ProjectId = projectId,
+                BudgetPlanIndex = 0
+            });
+            budgetPlan.DeliverPullRequestUrl.ShouldNotBeEmpty();
+            budgetPlan.DeliverCommitId.ShouldNotBeEmpty();
+
+            {
+                var balance = await TokenContractStub.GetBalance.CallAsync(new GetBalanceInput
+                {
+                    Owner = AliceAddress,
+                    Symbol = "ELF"
+                });
+                balance.Balance.ShouldBe(10_0000_0000_00000000 - InvestAmount);
+            }
+
+            // Alice gonna take rewards.
+            var projectInfo = await DAOContractStub.GetProjectInfo.CallAsync(projectId);
+            var result = await AliceProfitContractStub.ClaimProfits.SendAsync(new ClaimProfitsInput
+            {
+                SchemeId = projectInfo.ProfitSchemeId,
+                Beneficiary = AliceAddress
+            });
+            result.TransactionResult.Status.ShouldBe(TransactionResultStatus.Mined);
+
+            {
+                var balance = await TokenContractStub.GetBalance.CallAsync(new GetBalanceInput
+                {
+                    Owner = AliceAddress,
+                    Symbol = "ELF"
+                });
+                balance.Balance.ShouldBe(10_0000_0000_00000000);
+            }
+
+        }
+
+        private async Task CheckProjectStatus(Hash projectId, ProjectStatus status)
+        {
+            status.ShouldBe((await DAOContractStub.GetProjectInfo.CallAsync(projectId)).Status);
         }
     }
 }
