@@ -417,7 +417,7 @@ namespace AElf.Contracts.DAOContract
                     Owner = BobAddress,
                     Symbol = "ELF"
                 });
-                balance.Balance.ShouldBe(InvestAmount);
+                balance.Balance.ShouldBePositive();
             }
         }
 

@@ -177,7 +177,7 @@ namespace AElf.Contracts.DAOContract
             return profitSchemeId;
         }
 
-        private void AddBeneficiaries(ProjectInfo projectInfo)
+        private void AddBeneficiaryForInvestmentProject(ProjectInfo projectInfo)
         {
             foreach (var budgetPlan in projectInfo.BudgetPlans)
             {
@@ -193,6 +193,34 @@ namespace AElf.Contracts.DAOContract
                         }
                     }.ToByteString());
             }
+        }
+        
+        private void AddBeneficiaryForRewardProject(ProjectInfo projectInfo)
+        {
+            var budgetPlan = projectInfo.BudgetPlans.Single(p => p.Index == projectInfo.CurrentBudgetPlanIndex);
+            if (projectInfo.CurrentBudgetPlanIndex > 0)
+            {
+                var preBudgetPlanReceiver = projectInfo.BudgetPlans
+                    .Single(p => p.Index == projectInfo.CurrentBudgetPlanIndex.Sub(1)).ReceiverAddress;
+                Context.SendVirtualInline(projectInfo.GetProjectId(), State.ProfitContract.Value,
+                    nameof(State.ProfitContract.RemoveBeneficiary), new RemoveBeneficiaryInput
+                    {
+                        SchemeId = projectInfo.ProfitSchemeId,
+                        Beneficiary = preBudgetPlanReceiver
+                    }.ToByteString());
+            }
+
+            Context.SendVirtualInline(projectInfo.GetProjectId(), State.ProfitContract.Value,
+                nameof(State.ProfitContract.AddBeneficiary), new AddBeneficiaryInput
+                {
+                    SchemeId = projectInfo.ProfitSchemeId,
+                    EndPeriod = projectInfo.CurrentBudgetPlanIndex.Add(1),
+                    BeneficiaryShare = new BeneficiaryShare
+                    {
+                        Beneficiary = budgetPlan.ReceiverAddress,
+                        Shares = 1
+                    }
+                }.ToByteString());
         }
 
         private void PayBudget(ProjectInfo projectInfoIsState, ProjectInfo inputProjectInfo)
