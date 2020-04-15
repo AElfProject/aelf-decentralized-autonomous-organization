@@ -1,9 +1,34 @@
 # AElf DAO Contract
-This is a contract implemented basci Decentralized Autonomous Organization functionalities, including
+This is a contract implemented basic Decentralized Autonomous Organization functionalities, including
 
 - DAO Member Management.
 - AElf Investment Project Management.
 - AElf Reward Project Management.
+
+## DAO Member Management
+We have 3 functions related to manage DAO member list.
+- ProposeJoin
+- Quit
+- ProposeExpel
+And one function to adjust DAO proposal release threshold.
+- AdjustProposalReleaseThreshold
+
+`ProposeJoin` or `ProposeExpel` can only used by creating a proposal to **Parliament**, which means one's joining DAO need to be approved by current miners.
+A DAO member can send `Quit` transaction directly quitting DAO and get his deposit back immediately.
+
+## AElf Investment Project Management
+A developer can apply an Investment Project by sending a `ProposeProjectToDAO` transaction to DAO Contract, then DAO Contract will help this developer creating a proposal to **DAO** which is created in Association Contract.
+Current Investment Project Status: Proposed.
+After approved by DAO, this developer can publish buget plans by sending a `ProposeProjectToParliament` transaction to DAO Contract, the budget plans need to be approved by **Parliament**.
+Current Investment Project Status: Approved.
+After the budget plans got appvoed, any kind guy can thus invest to this project by sending an `Invest` transaction to DAO Contract, until all budget plans are fulfilled.
+Current Investment Project Status: Ready.
+After development, developers can send some `ProposeDeliver` transactions to deliver his works. If related proposal are approved by DAO, budgets will transfer to developers automatically.
+Current Investment Project Status: Delivered.
+
+## AElf Reward Project Management
+Basically same as above Investment Project, but two processes more.
+TODO.
 
 # Contract Proto File
 ```Protobuf
