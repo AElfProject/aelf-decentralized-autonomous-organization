@@ -1,29 +1,196 @@
-# AElf-boilerplate - A framework for smart contract and dApp development
+# AElf DAO Contract
+This is a contract implemented basci Decentralized Autonomous Organization functionalities, including
 
-Welcome to AElf Boilerplate's official GitHub repo !
+- DAO Member Management.
+- AElf Investment Project Management.
+- AElf Reward Project Management.
 
-Boilerplate is an environment that is used to develop smart contracts and dApps. Boilerplate shares some code with AElf and internally runs an AElf node.
+# Contract Proto File
+```Protobuf
+syntax = "proto3";
 
-## Getting Started
+import "aelf/core.proto";
+import "aelf/options.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/wrappers.proto";
 
-You can follow the tutorials [**here**](https://docs.aelf.io/main/main-1) that will get you started with contract development on Boilerplate. This tutorial also will guide you through the needed dependencies.
+option csharp_namespace = "AElf.Contracts.DAOContract";
 
-## Boilerplate
+service DAOContract {
+    option (aelf.csharp_state) = "AElf.Contracts.DAOContract.DAOContractState";
+    
+    rpc Initialize (InitializeInput) returns (google.protobuf.Empty) {
+    }
+    
+    rpc ReleaseProposal (ReleaseProposalInput) returns (google.protobuf.Empty) {
+    }
+    
+    // DAO Management
+    //   To be a DAO member, need to be approved by parliament.
+    rpc ProposeJoin (aelf.Address) returns (google.protobuf.Empty) {
+    }
+    //   To not be a DAO member.
+    rpc Quit (google.protobuf.Empty) returns (google.protobuf.Empty) {
+    }
+    //   To expel someone from DAO, need to be approved by parliament.
+    rpc ProposeExpel (aelf.Address) returns (google.protobuf.Empty) {
+    }
+    rpc AdjustProposalReleaseThreshold (DAOProposalReleaseThreshold) returns (google.protobuf.Empty) {
+    }
+    
+    // Investment Project Management
+    //   Developer propose a project for DAO to approve.
+    rpc ProposeProjectToDAO (ProposeProjectInput) returns (aelf.Hash) {
+    }
+    //   Developer propose a project for parliament to approve (after DAO).
+    rpc ProposeProjectToParliament (ProposeProjectWithBudgetsInput) returns (aelf.Hash) {
+    }
+    rpc Invest (InvestInput) returns (google.protobuf.Empty) {
+    }
+    //   Interfaces used by DAO Contract itself.
+    rpc UpdateInvestmentProject (ProjectInfo) returns (google.protobuf.Empty) {
+    }
+    
+    // Reward Project Management
+    //   DAO member project a reward project for DAO to approve.
+    rpc ProposeRewardProject (ProposeProjectInput) returns (aelf.Hash) {
+    }
+    //   DAO member project a reward project for parliament to approve (after DAO).
+    rpc ProposeIssueRewardProject (ProposeProjectWithBudgetsInput) returns (aelf.Hash) {
+    }
+    //   Developer propose to take over a reward project.
+    rpc ProposeTakeOverRewardProject (ProposeTakeOverRewardProjectInput) returns (aelf.Hash) {
+    }
+    //   Developer propose an audition for all developers to approve.
+    rpc ProposeDevelopersAudition (ProposeAuditionInput) returns (aelf.Hash) {
+    }
+    //   Interfaces used by DAO Contract itself.
+    rpc UpdateRewardProject (ProjectInfo) returns (google.protobuf.Empty) {
+    }
+    
+    // Common
+    //   Developer propose to deliver project to DAO.
+    rpc ProposeDeliver (ProposeAuditionInput) returns (aelf.Hash) {
+    }
+    //   To add a project (either investment project or reward project).
+    rpc AddProject (ProjectInfo) returns (google.protobuf.Empty) {
+    }
+    
+    // Views
+    rpc GetDAOMemberList (google.protobuf.Empty) returns (MemberList) {
+        option (aelf.is_view) = true;
+    }
+    rpc GetBudgetPlan (GetBudgetPlanInput) returns (BudgetPlan) {
+        option (aelf.is_view) = true;
+    }
+    rpc GetPreviewProposalId (ProposeProjectInput) returns (aelf.Hash) {
+        option (aelf.is_view) = true;
+    }
+    rpc GetProjectInfo (aelf.Hash) returns (ProjectInfo) {
+        option (aelf.is_view) = true;
+    }
+    rpc CalculateProjectId (ProposeProjectInput) returns (aelf.Hash) {
+        option (aelf.is_view) = true;
+    }
+}
 
-At the top level this repo contains two folders: **chain** and **web**. The chain folder contains code to facilitate contract development whereas the web folder contains the front end part of the dApp.
+message InitializeInput {
+    string deposit_symbol = 1;
+    int64 deposit_amount = 2;
+    repeated aelf.Address initial_member_list = 3;
+}
 
-## chain
+message ReleaseProposalInput {
+    aelf.Hash project_id = 1;
+    aelf.Hash proposal_id = 2;
+    ProposalOrganizationType organization_type = 3;
+}
 
-The process for developing the smart contract goes somewhat like this: define the smart contract, generate the code from the definition, implement the logic by using the generated code, test it and then deploy it.
+message DAOProposalReleaseThreshold {
+    int64 minimal_approval_threshold = 1;
+    int64 maximal_rejection_threshold = 2;
+    int64 maximal_abstention_threshold = 3;
+    int64 minimal_vote_threshold = 4;
+}
 
-The chain folder contains four sub-folders:
-- **contract**: the implementation of the contract.
-- **protobuf**: the definition of the contract.
-- **test**: the unit tests of the contract.
-- **src**: Boilerplate's core code, some elements need changing in here for the contract to be deployed.
+message ProposeProjectInput {
+    string pull_request_url = 1;
+    string commit_id = 2;
+    aelf.Hash pre_audition_hash = 3;
+}
 
-## Versioning
-We use Semantic Versioning (SemVer) for versioning, if you're intereted in closely following AElf's developement please check out the SemVer docs.
+message ProposeProjectWithBudgetsInput {
+    aelf.Hash project_id = 1;
+    repeated BudgetPlan budget_plans = 2;
+}
 
-## License
-AElf Boilerplate is licenced under MIT
+message BudgetPlan {
+    int32 index = 1;
+    int32 phase = 2;
+    string symbol = 3;
+    int64 amount = 4;
+    aelf.Address receiver_address = 5;
+    int64 paid_in_amount = 6;
+    string deliver_pull_request_url = 7;
+    string deliver_commit_id = 8;
+    bool is_approved_by_developers = 9;
+}
+
+message ProposeAuditionInput {
+    aelf.Hash project_id = 1;
+    string deliver_pull_request_url = 2;
+    string deliver_commit_id = 3;
+    int32 budget_plan_index = 4;
+}
+
+message ProposeTakeOverRewardProjectInput {
+    aelf.Hash project_id = 1;
+    repeated int32 budget_plan_indices = 2;
+}
+
+message MemberList {
+    repeated aelf.Address value = 1;
+}
+
+message GetBudgetPlanInput {
+    aelf.Hash project_id = 1;
+    int32 budget_plan_index = 2;
+}
+
+message ProjectInfo {
+    string pull_request_url = 1;
+    string commit_id = 2;
+    aelf.Hash pre_audition_hash = 3;
+    ProjectStatus status = 4;
+    repeated BudgetPlan budget_plans = 5;
+    int32 current_budget_plan_index = 6;
+    aelf.Hash profit_scheme_id = 7;
+    aelf.Address virtual_address = 8;// Save budgets and act as profit scheme manager.
+    ProjectType project_type = 9;
+}
+
+message InvestInput {
+    aelf.Hash project_id = 1;
+    string symbol = 2;
+    int64 amount = 3;
+}
+
+enum ProjectStatus {
+    PROPOSED = 0;// Proposed by developer (Investment) or by DAO member (Reward)
+    APPROVED = 1;// Approved budget plans.
+    READY = 2;// Budgets are ready.
+    TAKEN = 3;// Developers taken this project.
+    DELIVERED = 4;// Developers finished developing.
+}
+
+enum ProjectType {
+    INVESTMENT = 0;
+    REWARD = 1;
+}
+
+enum ProposalOrganizationType {
+    PARLIAMENT = 0;
+    D_A_O = 1;
+    DEVELOPERS = 2;
+}
+```
