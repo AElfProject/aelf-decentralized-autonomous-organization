@@ -89,14 +89,14 @@ namespace AElf.Contracts.DAOContract
                 case ProposalOrganizationType.DAO:
                 {
                     var proposalInfo = State.AssociationContract.GetProposal.Call(input.ProposalId);
-                    AssertReleaseThresholdReached(proposalInfo);
+                    AssertReleaseThresholdReached(proposalInfo, State.DAOProposalReleaseThreshold.Value);
                     State.AssociationContract.Release.Send(input.ProposalId);
                 }
                     break;
                 case ProposalOrganizationType.Developers:
                 {
                     var projectInfo = State.Projects[input.ProjectId];
-                    AssertApprovalCountMeetDeveloperOrganizationThreshold(input.ProjectId,
+                    AssertReleaseDeveloperOrganizationThresholdReached(input.ProposalId,
                         projectInfo.BudgetPlans.Select(p => p.ReceiverAddress).Distinct().Count());
                     State.AssociationContract.Release.Send(input.ProposalId);
                 }

@@ -21,7 +21,7 @@ namespace AElf.Contracts.DAOContract
                 ContractMethodName = methodName,
                 Params = parameter,
                 OrganizationAddress = State.OrganizationAddress.Value,
-                ExpiredTime = Context.CurrentBlockTime.AddHours(1),
+                ExpiredTime = GetExpiredTime(),
                 ToAddress = State.AssociationContract.Value
             };
             State.AssociationContract.CreateProposal.Send(createProposalInput);
@@ -38,7 +38,7 @@ namespace AElf.Contracts.DAOContract
                 ContractMethodName = methodName,
                 Params = parameter,
                 OrganizationAddress = State.ParliamentDefaultAddress.Value,
-                ExpiredTime = Context.CurrentBlockTime.AddHours(1),
+                ExpiredTime = GetExpiredTime(),
                 ToAddress = Context.Self
             };
             State.ParliamentContract.CreateProposal.Send(createProposalInput);
@@ -53,7 +53,7 @@ namespace AElf.Contracts.DAOContract
                 ContractMethodName = methodName,
                 Params = parameter,
                 OrganizationAddress = State.OrganizationAddress.Value,
-                ExpiredTime = Context.CurrentBlockTime.AddHours(1),
+                ExpiredTime = GetExpiredTime(),
                 ToAddress = Context.Self
             };
             State.AssociationContract.CreateProposal.Send(createProposalInput);
@@ -69,12 +69,17 @@ namespace AElf.Contracts.DAOContract
                 ContractMethodName = methodName,
                 Params = parameter,
                 OrganizationAddress = developerOrganizationAddress,
-                ExpiredTime = Context.CurrentBlockTime.AddHours(1),
+                ExpiredTime = GetExpiredTime(),
                 ToAddress = Context.Self
             };
             State.AssociationContract.CreateProposal.Send(createProposalInput);
             var proposalId = State.AssociationContract.CreateProposal.Call(createProposalInput);
             return proposalId;
+        }
+
+        private Timestamp GetExpiredTime()
+        {
+            return Context.CurrentBlockTime.AddDays(7);
         }
 
         private void AssertReleasedByParliament()
@@ -86,41 +91,44 @@ namespace AElf.Contracts.DAOContract
             Assert(Context.Sender == defaultAddress, "No permission.");
         }
 
-        private void AssertReleaseThresholdReached(ProposalOutput proposal)
+        private void AssertReleaseThresholdReached(ProposalOutput proposal,
+            DAOProposalReleaseThreshold proposalReleaseThreshold)
         {
-            Assert(IsReleaseThresholdReached(proposal), "No approved by DAO members.");
+            Assert(IsReleaseThresholdReached(proposal, proposalReleaseThreshold), "No approved by certain members.");
         }
 
-        private bool IsReleaseThresholdReached(ProposalOutput proposal)
+        private bool IsReleaseThresholdReached(ProposalOutput proposal,
+            DAOProposalReleaseThreshold proposalReleaseThreshold)
         {
-            var isRejected = IsProposalRejected(proposal);
+            var isRejected = IsProposalRejected(proposal, proposalReleaseThreshold);
             if (isRejected)
                 return false;
 
-            var isAbstained = IsProposalAbstained(proposal);
-            return !isAbstained && CheckEnoughVoteAndApprovals(proposal);
+            var isAbstained = IsProposalAbstained(proposal, proposalReleaseThreshold);
+            return !isAbstained && CheckEnoughVoteAndApprovals(proposal, proposalReleaseThreshold);
         }
 
-        private bool IsProposalRejected(ProposalOutput proposal)
+        private bool IsProposalRejected(ProposalOutput proposal, DAOProposalReleaseThreshold proposalReleaseThreshold)
         {
-            return proposal.RejectionCount > State.DAOProposalReleaseThreshold.Value.MaximalRejectionThreshold;
+            return proposal.RejectionCount > proposalReleaseThreshold.MaximalRejectionThreshold;
         }
 
-        private bool IsProposalAbstained(ProposalOutput proposal)
+        private bool IsProposalAbstained(ProposalOutput proposal, DAOProposalReleaseThreshold proposalReleaseThreshold)
         {
-            return proposal.AbstentionCount > State.DAOProposalReleaseThreshold.Value.MaximalAbstentionThreshold;
+            return proposal.AbstentionCount > proposalReleaseThreshold.MaximalAbstentionThreshold;
         }
 
-        private bool CheckEnoughVoteAndApprovals(ProposalOutput proposal)
+        private bool CheckEnoughVoteAndApprovals(ProposalOutput proposal,
+            DAOProposalReleaseThreshold proposalReleaseThreshold)
         {
             var isApprovalEnough =
-                proposal.ApprovalCount >= State.DAOProposalReleaseThreshold.Value.MinimalApprovalThreshold;
+                proposal.ApprovalCount >= proposalReleaseThreshold.MinimalApprovalThreshold;
             if (!isApprovalEnough)
                 return false;
 
             var isVoteThresholdReached =
                 proposal.ApprovalCount.Add(proposal.AbstentionCount).Add(proposal.RejectionCount) >=
-                State.DAOProposalReleaseThreshold.Value.MinimalVoteThreshold;
+                proposalReleaseThreshold.MinimalVoteThreshold;
             return isVoteThresholdReached;
         }
 
@@ -136,11 +144,18 @@ namespace AElf.Contracts.DAOContract
             };
         }
 
-        private void AssertApprovalCountMeetDeveloperOrganizationThreshold(Hash proposalId, int developerCount)
+        private void AssertReleaseDeveloperOrganizationThresholdReached(Hash proposalId, int developerCount)
         {
             var proposalInfo = State.AssociationContract.GetProposal.Call(proposalId);
+            Assert(proposalInfo.ProposalId != null, "Proposal not found.");
             // Allow one developer not approve.
-            Assert(proposalInfo.ApprovalCount >= developerCount.Sub(1), "Not approved by other developers");
+            AssertReleaseThresholdReached(proposalInfo, new DAOProposalReleaseThreshold
+            {
+                MaximalAbstentionThreshold = developerCount.Div(2),
+                MaximalRejectionThreshold = developerCount.Div(2),
+                MinimalApprovalThreshold = developerCount.Div(2),
+                MinimalVoteThreshold = developerCount.Div(2)
+            });
         }
 
         private Hash CreateProfitScheme(ProjectInfo projectInfo)

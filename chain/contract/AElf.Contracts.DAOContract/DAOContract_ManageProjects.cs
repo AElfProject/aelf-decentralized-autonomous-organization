@@ -106,7 +106,7 @@ namespace AElf.Contracts.DAOContract
                     AddBeneficiaries(currentProject);
                 }
 
-                if (State.DeveloperOrganizationAddress[projectId] == null)
+                if (currentProject.BudgetPlans.All(p => p.ReceiverAddress != null))
                 {
                     var developerList = currentProject.BudgetPlans.Select(p => p.ReceiverAddress);
                     State.DeveloperOrganizationAddress[projectId] = CreateDeveloperOrganization(developerList);
