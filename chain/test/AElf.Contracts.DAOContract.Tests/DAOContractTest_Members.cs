@@ -62,10 +62,7 @@ namespace AElf.Contracts.DAOContract
                 OrganizationAddress = ParliamentDefaultOrganizationAddress,
                 ContractMethodName = nameof(DAOContractStub.ProposeJoin),
                 ExpiredTime = TimestampHelper.GetUtcNow().AddHours(1),
-                Params = new StringValue
-                {
-                    Value = AliceKeyPair.PublicKey.ToHex()
-                }.ToByteString(),
+                Params = AliceAddress.ToByteString(),
                 ToAddress = DAOContractAddress
             })).Output;
             await ParliamentApproveAsync(proposalId);
@@ -124,10 +121,7 @@ namespace AElf.Contracts.DAOContract
                 OrganizationAddress = ParliamentDefaultOrganizationAddress,
                 ContractMethodName = nameof(DAOContractStub.ProposeExpel),
                 ExpiredTime = TimestampHelper.GetUtcNow().AddHours(1),
-                Params = new StringValue
-                {
-                    Value = AliceKeyPair.PublicKey.ToHex()
-                }.ToByteString(),
+                Params = AliceAddress.ToByteString(),
                 ToAddress = DAOContractAddress
             })).Output;
             await ParliamentApproveAsync(proposalId);

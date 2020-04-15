@@ -9,15 +9,14 @@ namespace AElf.Contracts.DAOContract
     // ReSharper disable InconsistentNaming
     public partial class DAOContract
     {
-        public override Empty ProposeJoin(StringValue input)
+        public override Empty ProposeJoin(Address input)
         {
             AssertReleasedByParliament();
-            var joinAddress = Address.FromPublicKey(ByteArrayHelper.HexStringToByteArray(input.Value));
             if (State.DepositAmount.Value > 0)
             {
                 State.TokenContract.TransferFrom.Send(new TransferFromInput
                 {
-                    From = joinAddress,
+                    From = input,
                     To = Context.Self,
                     Symbol = State.DepositSymbol.Value,
                     Amount = State.DepositAmount.Value
@@ -25,13 +24,14 @@ namespace AElf.Contracts.DAOContract
             }
 
             var memberList = State.DAOMemberList.Value;
-            memberList.Value.Add(joinAddress);
+            Assert(!memberList.Value.Contains(input), $"{input} is already a DAO member.");
+            memberList.Value.Add(input);
             CreateProposalToAssociationContractAndRelease(nameof(State.AssociationContract.ChangeOrganizationMember), new OrganizationMemberList
             {
                 OrganizationMembers = {memberList.Value}
             }.ToByteString());
             State.DAOMemberList.Value = memberList;
-            AdjustApprovalThreshold();
+            AdjustDAOProposalReleaseThreshold();
             return new Empty();
         }
 
@@ -55,22 +55,21 @@ namespace AElf.Contracts.DAOContract
             {
                 OrganizationMembers = {memberList.Value}
             }.ToByteString());
-            AdjustApprovalThreshold();
+            AdjustDAOProposalReleaseThreshold();
             return new Empty();
         }
 
-        public override Empty ProposeExpel(StringValue input)
+        public override Empty ProposeExpel(Address input)
         {
             AssertReleasedByParliament();
             var memberList = State.DAOMemberList.Value;
-            var quitAddress = Address.FromPublicKey(ByteArrayHelper.HexStringToByteArray(input.Value));
-            Assert(memberList.Value.Contains(quitAddress), $"DAO Member {input.Value} not found.");
-            memberList.Value.Remove(quitAddress);
+            Assert(memberList.Value.Contains(input), $"DAO Member {input.Value} not found.");
+            memberList.Value.Remove(input);
             CreateProposalToAssociationContractAndRelease(nameof(State.AssociationContract.ChangeOrganizationMember), new OrganizationMemberList
             {
                 OrganizationMembers = {memberList.Value}
             }.ToByteString());
-            AdjustApprovalThreshold();
+            AdjustDAOProposalReleaseThreshold();
             return new Empty();
         }
     }

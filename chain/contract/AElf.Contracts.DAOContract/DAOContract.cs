@@ -32,17 +32,25 @@ namespace AElf.Contracts.DAOContract
                 State.ParliamentContract.GetDefaultOrganizationAddress.Call(new Empty());
 
             // Create Decentralized Autonomous Organization via Association Contract.
-            var minerList = State.ConsensusContract.GetMinerList.Call(new GetMinerListInput {TermNumber = 1});
-            var members = minerList.Pubkeys.Select(p =>
-                Address.FromPublicKey(ByteArrayHelper.HexStringToByteArray(p.ToHex()))).ToList();
-            members.Add(Context.Self);
+            var minerList = input.InitialMemberList != null && input.InitialMemberList.Any()
+                ? new MemberList {Value = {input.InitialMemberList}}
+                : new MemberList
+                {
+                    Value =
+                    {
+                        State.ConsensusContract.GetMinerList.Call(new GetMinerListInput {TermNumber = 1}).Pubkeys
+                            .Select(p =>
+                                Address.FromPublicKey(ByteArrayHelper.HexStringToByteArray(p.ToHex())))
+                    }
+                };
+            minerList.Value.Add(Context.Self);
             var createOrganizationInput = new CreateOrganizationInput
             {
                 OrganizationMemberList = new OrganizationMemberList
                 {
                     OrganizationMembers =
                     {
-                        members
+                        minerList.Value
                     }
                 },
                 ProposalReleaseThreshold = new ProposalReleaseThreshold
@@ -58,21 +66,21 @@ namespace AElf.Contracts.DAOContract
             // Record DAO Address and initial member list.
             State.OrganizationAddress.Value =
                 State.AssociationContract.CalculateOrganizationAddress.Call(createOrganizationInput);
-            State.DAOMemberList.Value = new MemberList
-            {
-                Value = {members}
-            };
+            State.DAOMemberList.Value = minerList;
+
+            State.DAOInitialMemberList.Value = minerList;
 
             State.DepositSymbol.Value = Context.Variables.NativeSymbol;
             State.DepositAmount.Value = input.DepositAmount;
-            State.ApprovalThreshold.Value = 1;
+
+            AdjustDAOProposalReleaseThreshold();
+
             return new Empty();
         }
 
         public override Empty ReleaseProposal(ReleaseProposalInput input)
         {
             State.CanBeReleased[input.ProjectId] = true;
-
             switch (input.OrganizationType)
             {
                 case ProposalOrganizationType.Parliament:
@@ -81,7 +89,7 @@ namespace AElf.Contracts.DAOContract
                 case ProposalOrganizationType.DAO:
                 {
                     var proposalInfo = State.AssociationContract.GetProposal.Call(input.ProposalId);
-                    AssertApprovalCountMeetDAOThreshold(proposalInfo.ApprovalCount);
+                    AssertReleaseThresholdReached(proposalInfo);
                     State.AssociationContract.Release.Send(input.ProposalId);
                 }
                     break;
@@ -93,10 +101,15 @@ namespace AElf.Contracts.DAOContract
                     State.AssociationContract.Release.Send(input.ProposalId);
                 }
                     break;
-                default:
-                    throw new ArgumentOutOfRangeException();
             }
 
+            return new Empty();
+        }
+
+        public override Empty AdjustProposalReleaseThreshold(DAOProposalReleaseThreshold input)
+        {
+            Assert(State.DAOInitialMemberList.Value.Value.Contains(Context.Sender), "No permission.");
+            State.DAOProposalReleaseThreshold.Value = input;
             return new Empty();
         }
 

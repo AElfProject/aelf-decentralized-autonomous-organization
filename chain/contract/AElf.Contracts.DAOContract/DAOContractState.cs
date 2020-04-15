@@ -17,6 +17,8 @@ namespace AElf.Contracts.DAOContract
         internal TokenContractContainer.TokenContractReferenceState TokenContract { get; set; }
         internal ProfitContractContainer.ProfitContractReferenceState ProfitContract { get; set; }
 
+        public SingletonState<MemberList> DAOInitialMemberList { get; set; }
+
         public SingletonState<Address> ParliamentDefaultAddress { get; set; }
 
         public SingletonState<string> DepositSymbol { get; set; }
@@ -32,7 +34,7 @@ namespace AElf.Contracts.DAOContract
         /// </summary>
         public MappedState<Hash, Hash> PreviewProposalIds { get; set; }
 
-        public SingletonState<long> ApprovalThreshold { get; set; }
+        public SingletonState<DAOProposalReleaseThreshold> DAOProposalReleaseThreshold { get; set; }
 
         public MappedState<Hash, bool> CanBeReleased { get; set; }
 

@@ -86,14 +86,54 @@ namespace AElf.Contracts.DAOContract
             Assert(Context.Sender == defaultAddress, "No permission.");
         }
 
-        private void AdjustApprovalThreshold()
+        private void AssertReleaseThresholdReached(ProposalOutput proposal)
         {
-            State.ApprovalThreshold.Value = State.DAOMemberList.Value.Value.Count.Mul(2).Div(3).Add(1);
+            Assert(IsReleaseThresholdReached(proposal), "No approved by DAO members.");
         }
 
-        private void AssertApprovalCountMeetDAOThreshold(long approvalCount)
+        private bool IsReleaseThresholdReached(ProposalOutput proposal)
         {
-            Assert(approvalCount >= State.ApprovalThreshold.Value, "Not approved by DAO members yet.");
+            var isRejected = IsProposalRejected(proposal);
+            if (isRejected)
+                return false;
+
+            var isAbstained = IsProposalAbstained(proposal);
+            return !isAbstained && CheckEnoughVoteAndApprovals(proposal);
+        }
+
+        private bool IsProposalRejected(ProposalOutput proposal)
+        {
+            return proposal.RejectionCount > State.DAOProposalReleaseThreshold.Value.MaximalRejectionThreshold;
+        }
+
+        private bool IsProposalAbstained(ProposalOutput proposal)
+        {
+            return proposal.AbstentionCount > State.DAOProposalReleaseThreshold.Value.MaximalAbstentionThreshold;
+        }
+
+        private bool CheckEnoughVoteAndApprovals(ProposalOutput proposal)
+        {
+            var isApprovalEnough =
+                proposal.ApprovalCount >= State.DAOProposalReleaseThreshold.Value.MinimalApprovalThreshold;
+            if (!isApprovalEnough)
+                return false;
+
+            var isVoteThresholdReached =
+                proposal.ApprovalCount.Add(proposal.AbstentionCount).Add(proposal.RejectionCount) >=
+                State.DAOProposalReleaseThreshold.Value.MinimalVoteThreshold;
+            return isVoteThresholdReached;
+        }
+
+        private void AdjustDAOProposalReleaseThreshold()
+        {
+            var memberListCount = State.DAOInitialMemberList.Value.Value.Count;
+            State.DAOProposalReleaseThreshold.Value = new DAOProposalReleaseThreshold
+            {
+                MaximalAbstentionThreshold = memberListCount.Div(2),
+                MaximalRejectionThreshold = memberListCount.Div(2),
+                MinimalApprovalThreshold = memberListCount.Div(2),
+                MinimalVoteThreshold = memberListCount.Div(2)
+            };
         }
 
         private void AssertApprovalCountMeetDeveloperOrganizationThreshold(Hash proposalId, int developerCount)
@@ -208,6 +248,7 @@ namespace AElf.Contracts.DAOContract
                     budgetPlan.ReceiverAddress = null;
                 }
             }
+
             var proposalId = CreateProposalToParliament(
                 projectType == ProjectType.Investment ? nameof(UpdateInvestmentProject) : nameof(UpdateRewardProject),
                 new ProjectInfo

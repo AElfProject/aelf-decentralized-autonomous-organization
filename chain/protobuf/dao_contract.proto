@@ -18,13 +18,15 @@ service DAOContract {
     
     // DAO Management
     //   To be a DAO member, need to be approved by parliament.
-    rpc ProposeJoin (google.protobuf.StringValue) returns (google.protobuf.Empty) {
+    rpc ProposeJoin (aelf.Address) returns (google.protobuf.Empty) {
     }
     //   To not be a DAO member.
     rpc Quit (google.protobuf.Empty) returns (google.protobuf.Empty) {
     }
     //   To expel someone from DAO, need to be approved by parliament.
-    rpc ProposeExpel (google.protobuf.StringValue) returns (google.protobuf.Empty) {
+    rpc ProposeExpel (aelf.Address) returns (google.protobuf.Empty) {
+    }
+    rpc AdjustProposalReleaseThreshold (DAOProposalReleaseThreshold) returns (google.protobuf.Empty) {
     }
     
     // Investment Project Management
@@ -84,13 +86,22 @@ service DAOContract {
 }
 
 message InitializeInput {
-    int64 deposit_amount = 1;
+    string deposit_symbol = 1;
+    int64 deposit_amount = 2;
+    repeated aelf.Address initial_member_list = 3;
 }
 
 message ReleaseProposalInput {
     aelf.Hash project_id = 1;
     aelf.Hash proposal_id = 2;
     ProposalOrganizationType organization_type = 3;
+}
+
+message DAOProposalReleaseThreshold {
+    int64 minimal_approval_threshold = 1;
+    int64 maximal_rejection_threshold = 2;
+    int64 maximal_abstention_threshold = 3;
+    int64 minimal_vote_threshold = 4;
 }
 
 message ProposeProjectInput {

@@ -34,8 +34,11 @@ namespace AElf.Contracts.DAOContract
 
             if (input.Status == ProjectStatus.Approved && currentProject.ProfitSchemeId == null)
             {
+                // Update budget plans.
                 CheckBudgetPlans(input.BudgetPlans);
                 currentProject.BudgetPlans.AddRange(input.BudgetPlans);
+
+                // Create project scheme and add developers as beneficiaries.
                 var profitSchemeId = CreateProfitScheme(currentProject);
                 currentProject.ProfitSchemeId = profitSchemeId;
                 AddBeneficiaries(currentProject);
@@ -69,7 +72,7 @@ namespace AElf.Contracts.DAOContract
             CheckProjectProposalCanBeReleased(projectId);
             var currentProject = State.Projects[projectId];
             currentProject.CurrentBudgetPlanIndex = input.CurrentBudgetPlanIndex;
-            
+
             if (input.Status == ProjectStatus.Approved && currentProject.ProfitSchemeId == null)
             {
                 CheckBudgetPlans(input.BudgetPlans);
@@ -108,15 +111,16 @@ namespace AElf.Contracts.DAOContract
                     var developerList = currentProject.BudgetPlans.Select(p => p.ReceiverAddress);
                     State.DeveloperOrganizationAddress[projectId] = CreateDeveloperOrganization(developerList);
                 }
-                
-                if (currentProject.Status == ProjectStatus.Taken && currentProject.BudgetPlans.All(p => p.IsApprovedByDevelopers))
+
+                if (currentProject.Status == ProjectStatus.Taken &&
+                    currentProject.BudgetPlans.All(p => p.IsApprovedByDevelopers))
                 {
                     PayBudget(currentProject, input);
                 }
 
                 Assert(input.BudgetPlans.Count == 1, "Can only update one budget plan one time.");
                 var updateBudgetPlan = input.BudgetPlans.Single();
-                
+
                 // Approved by developers.
                 if (updateBudgetPlan.IsApprovedByDevelopers)
                 {
