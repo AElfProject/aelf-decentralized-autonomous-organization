@@ -25,6 +25,13 @@ namespace AElf.Contracts.DAOContract
             return new Empty();
         }
 
+        public override Empty RemoveProject(Hash input)
+        {
+            CheckProjectProposalCanBeReleased(input);
+            State.Projects.Remove(input);
+            return new Empty();
+        }
+
         public override Empty UpdateInvestmentProject(ProjectInfo input)
         {
             var projectId = input.GetProjectId();
@@ -66,6 +73,7 @@ namespace AElf.Contracts.DAOContract
             }
 
             currentProject.Status = input.Status;
+            currentProject.ProjectType = ProjectType.Investment;
             State.Projects[projectId] = currentProject;
             return new Empty();
         }
@@ -149,6 +157,7 @@ namespace AElf.Contracts.DAOContract
             }
 
             currentProject.Status = input.Status;
+            currentProject.ProjectType = ProjectType.Reward;
             State.Projects[projectId] = currentProject;
             return new Empty();
         }

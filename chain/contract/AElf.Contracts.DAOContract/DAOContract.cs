@@ -240,6 +240,7 @@ namespace AElf.Contracts.DAOContract
             var projectInfo = State.Projects[input.ProjectId].Clone();
             Assert(projectInfo != null, "Project not found.");
             // ReSharper disable once PossibleNullReferenceException
+            Assert(projectInfo.ProjectType == ProjectType.Reward, "Only reward project support this option.");
             var takenBudgetPlanIndices = projectInfo.BudgetPlans.Where(p => p.ReceiverAddress != null)
                 .Select(p => p.Index).ToList();
             Assert(!takenBudgetPlanIndices.Any(i => input.BudgetPlanIndices.Contains(i)),
@@ -291,15 +292,8 @@ namespace AElf.Contracts.DAOContract
 
         public override Hash ProposeRemoveProject(Hash input)
         {
-            var proposalId = CreateProposalToSelf(nameof(RemoveProject), input.ToByteString());
-            return proposalId;
-        }
-
-        public override Empty RemoveProject(Hash input)
-        {
-            var proposalInfo = State.AssociationContract.GetProposal.Call(input);
-            AssertReleaseThresholdReached(proposalInfo, State.DAOProposalReleaseThreshold.Value);
-            return new Empty();
+            Assert(State.DAOMemberList.Value.Value.Contains(Context.Sender), "No permission.");
+            return CreateProposalToSelf(nameof(RemoveProject), input.ToByteString());
         }
     }
 }
