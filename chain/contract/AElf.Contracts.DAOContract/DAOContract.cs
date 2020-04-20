@@ -81,6 +81,8 @@ namespace AElf.Contracts.DAOContract
         public override Empty ReleaseProposal(ReleaseProposalInput input)
         {
             State.CanBeReleased[input.ProjectId] = true;
+            Assert((int) input.OrganizationType <= (int) ProposalOrganizationType.Developers,
+                "Invalid organization type.");
             switch (input.OrganizationType)
             {
                 case ProposalOrganizationType.Parliament:
