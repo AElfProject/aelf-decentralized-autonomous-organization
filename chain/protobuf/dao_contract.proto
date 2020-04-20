@@ -66,6 +66,12 @@ service DAOContract {
     //   To add a project (either investment project or reward project).
     rpc AddProject (ProjectInfo) returns (google.protobuf.Empty) {
     }
+    //   To remove a project.
+    //   DAO member can propose to remove a project.
+    rpc ProposeRemoveProject (aelf.Hash) returns (aelf.Hash) {
+    }
+    rpc RemoveProject (aelf.Hash) returns (google.protobuf.Empty) {
+    }
     
     // Views
     rpc GetDAOMemberList (google.protobuf.Empty) returns (MemberList) {
@@ -183,4 +189,18 @@ enum ProposalOrganizationType {
     PARLIAMENT = 0;
     D_A_O = 1;
     DEVELOPERS = 2;
+}
+
+enum InvestmentStatus {
+    NOT_ENOUGH = 0;
+    COMPLETE = 1;
+}
+
+// LogEvents
+
+message InvestmentFeedback {
+    option (aelf.is_event) = true;
+    int64 remain_amount = 1;
+    string symbol = 2;
+    InvestmentStatus investment_status = 3;
 }

@@ -156,7 +156,24 @@ namespace AElf.Contracts.DAOContract
                 {
                     budgetPlan.PaidInAmount = Math.Min(budgetPlan.Amount, remainBudgets);
                     remainBudgets = remainBudgets.Sub(budgetPlan.Amount);
-                    if (remainBudgets <= 0) break;
+                    if (remainBudgets <= 0)
+                    {
+                        Context.Fire(new InvestmentFeedback
+                        {
+                            InvestmentStatus = InvestmentStatus.Complete
+                        });
+                        break;
+                    }
+                }
+
+                if (remainBudgets > 0)
+                {
+                    Context.Fire(new InvestmentFeedback
+                    {
+                        Symbol = input.Symbol,
+                        RemainAmount = remainBudgets,
+                        InvestmentStatus = InvestmentStatus.NotEnough
+                    });
                 }
             }
 
@@ -267,6 +284,19 @@ namespace AElf.Contracts.DAOContract
             var proposalId = CreateProposalToDeveloperOrganization(developerOrganizationAddress,
                 nameof(UpdateRewardProject), newProjectInfo.ToByteString());
             return proposalId;
+        }
+
+        public override Hash ProposeRemoveProject(Hash input)
+        {
+            var proposalId = CreateProposalToSelf(nameof(RemoveProject), input.ToByteString());
+            return proposalId;
+        }
+
+        public override Empty RemoveProject(Hash input)
+        {
+            var proposalInfo = State.AssociationContract.GetProposal.Call(input);
+            AssertReleaseThresholdReached(proposalInfo, State.DAOProposalReleaseThreshold.Value);
+            return new Empty();
         }
     }
 }

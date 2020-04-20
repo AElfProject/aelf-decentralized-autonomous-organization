@@ -12,7 +12,7 @@ namespace AElf.Contracts.DAOContract
             var projectInfo = State.Projects[input.ProjectId];
             Assert(projectInfo != null, "Project not found.");
             // ReSharper disable once PossibleNullReferenceException
-            return projectInfo.BudgetPlans.Single(p => p.Index == input.BudgetPlanIndex);
+            return projectInfo.BudgetPlans.SingleOrDefault(p => p.Index == input.BudgetPlanIndex);
         }
 
         public override MemberList GetDAOMemberList(Empty input)

@@ -30,7 +30,11 @@ namespace AElf.Contracts.DAOContract
             var projectId = input.GetProjectId();
             CheckProjectProposalCanBeReleased(projectId);
             var currentProject = State.Projects[projectId];
+
+            Assert(currentProject != null, "Project not found.");
+            // ReSharper disable once PossibleNullReferenceException
             currentProject.CurrentBudgetPlanIndex = input.CurrentBudgetPlanIndex;
+            Assert(currentProject.Status != ProjectStatus.Delivered, "Project already delivered.");
 
             if (input.Status == ProjectStatus.Approved && currentProject.ProfitSchemeId == null)
             {
@@ -71,7 +75,10 @@ namespace AElf.Contracts.DAOContract
             var projectId = input.GetProjectId();
             CheckProjectProposalCanBeReleased(projectId);
             var currentProject = State.Projects[projectId];
+            Assert(currentProject != null, "Project not found.");
+            // ReSharper disable once PossibleNullReferenceException
             currentProject.CurrentBudgetPlanIndex = input.CurrentBudgetPlanIndex;
+            Assert(currentProject.Status != ProjectStatus.Delivered, "Project already delivered.");
 
             if (input.Status == ProjectStatus.Approved && currentProject.ProfitSchemeId == null)
             {

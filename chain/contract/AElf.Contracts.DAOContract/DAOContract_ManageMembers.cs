@@ -50,7 +50,6 @@ namespace AElf.Contracts.DAOContract
             var memberList = State.DAOMemberList.Value;
             Assert(memberList.Value.Contains(Context.Sender), $"DAO Member {Context.Sender} not found.");
             memberList.Value.Remove(Context.Sender);
-            memberList.Value.Remove(Context.Sender);
             CreateProposalToAssociationContractAndRelease(nameof(State.AssociationContract.ChangeOrganizationMember), new OrganizationMemberList
             {
                 OrganizationMembers = {memberList.Value}
