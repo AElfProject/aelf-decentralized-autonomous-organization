@@ -177,6 +177,13 @@ namespace AElf.Contracts.DAOContract
                     });
                 }
             }
+            else
+            {
+                Context.Fire(new InvestmentFeedback
+                {
+                    InvestmentStatus = InvestmentStatus.Complete
+                });
+            }
 
             if (projectInfo.BudgetPlans.All(p => p.Amount == p.PaidInAmount))
             {
@@ -205,7 +212,7 @@ namespace AElf.Contracts.DAOContract
                     : projectInfo.ProjectType == ProjectType.Investment
                         ? ProjectStatus.Ready
                         : ProjectStatus.Taken,
-                BudgetPlans = {projectInfo.BudgetPlans}
+                BudgetPlans = {projectInfo.BudgetPlans.Single(p => p.Index == input.BudgetPlanIndex)}
             };
 
             var budgetPlan = newProjectInfo.BudgetPlans.SingleOrDefault(p => p.Index == input.BudgetPlanIndex);
