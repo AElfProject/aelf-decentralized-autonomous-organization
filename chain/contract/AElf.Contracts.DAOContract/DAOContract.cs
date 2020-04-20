@@ -81,28 +81,27 @@ namespace AElf.Contracts.DAOContract
         public override Empty ReleaseProposal(ReleaseProposalInput input)
         {
             State.CanBeReleased[input.ProjectId] = true;
-            Assert((int) input.OrganizationType <= (int) ProposalOrganizationType.Developers,
-                "Invalid organization type.");
             switch (input.OrganizationType)
             {
                 case ProposalOrganizationType.Parliament:
                     State.ParliamentContract.Release.Send(input.ProposalId);
                     break;
                 case ProposalOrganizationType.DAO:
-                {
                     var proposalInfo = State.AssociationContract.GetProposal.Call(input.ProposalId);
                     AssertReleaseThresholdReached(proposalInfo, State.DAOProposalReleaseThreshold.Value);
                     State.AssociationContract.Release.Send(input.ProposalId);
-                }
                     break;
                 case ProposalOrganizationType.Developers:
-                {
                     var projectInfo = State.Projects[input.ProjectId];
                     AssertReleaseDeveloperOrganizationThresholdReached(input.ProposalId,
                         projectInfo.BudgetPlans.Select(p => p.ReceiverAddress).Distinct().Count());
                     State.AssociationContract.Release.Send(input.ProposalId);
-                }
                     break;
+                default:
+                {
+                    Assert(false, "Invalid Organization Type.");
+                    break;
+                }
             }
 
             return new Empty();
