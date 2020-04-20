@@ -110,29 +110,36 @@ namespace AElf.Contracts.DAOContract
             {
                 AddBeneficiaryForRewardProject(currentProject);
 
+                // Create organization for developers if all budget plans are taken.
                 if (currentProject.BudgetPlans.All(p => p.ReceiverAddress != null))
                 {
                     var developerList = currentProject.BudgetPlans.Select(p => p.ReceiverAddress);
                     State.DeveloperOrganizationAddress[projectId] = CreateDeveloperOrganization(developerList);
                 }
 
+                // If all budget plans are taken, next steps are approved by developers for each one.
+                if (currentProject.Status == ProjectStatus.Taken)
+                {
+                    Assert(input.BudgetPlans.Count == 1, "Can only update one budget plan one time.");
+                    
+                    var updateBudgetPlan = input.BudgetPlans.Single();
+
+                    // Approved by developers.
+                    if (updateBudgetPlan.IsApprovedByDevelopers)
+                    {
+                        var targetBudgetPlan =
+                            currentProject.BudgetPlans.SingleOrDefault(p => p.Index == updateBudgetPlan.Index);
+                        Assert(targetBudgetPlan != null, "Target budget plan not found.");
+                        // ReSharper disable once PossibleNullReferenceException
+                        targetBudgetPlan.IsApprovedByDevelopers = true;
+                    }
+                }
+
+                // If all budget plans are approved by developers, next steps are pay budgets after approved by DAO.
                 if (currentProject.Status == ProjectStatus.Taken &&
                     currentProject.BudgetPlans.All(p => p.IsApprovedByDevelopers))
                 {
                     PayBudget(currentProject, input);
-                }
-
-                Assert(input.BudgetPlans.Count == 1, "Can only update one budget plan one time.");
-                var updateBudgetPlan = input.BudgetPlans.Single();
-
-                // Approved by developers.
-                if (updateBudgetPlan.IsApprovedByDevelopers)
-                {
-                    var targetBudgetPlan =
-                        currentProject.BudgetPlans.SingleOrDefault(p => p.Index == updateBudgetPlan.Index);
-                    Assert(targetBudgetPlan != null, "Target budget plan not found.");
-                    // ReSharper disable once PossibleNullReferenceException
-                    targetBudgetPlan.IsApprovedByDevelopers = true;
                 }
             }
 

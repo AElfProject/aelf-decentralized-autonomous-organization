@@ -261,7 +261,7 @@ namespace AElf.Contracts.DAOContract
                 CommitId = projectInfo.CommitId,
                 // If all budget plans are taken, status will be ProjectStatus.Taken, otherwise stay ProjectStatus.Approved.
                 Status = status,
-                BudgetPlans = {projectInfo.BudgetPlans}
+                BudgetPlans = {projectInfo.BudgetPlans.Where(p => input.BudgetPlanIndices.Contains(p.Index))}
             }.ToByteString());
         }
 
