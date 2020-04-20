@@ -202,7 +202,9 @@ namespace AElf.Contracts.DAOContract
                 CurrentBudgetPlanIndex = input.BudgetPlanIndex,
                 Status = projectInfo.BudgetPlans.Select(p => p.Index).OrderBy(p => p).Last() == input.BudgetPlanIndex
                     ? ProjectStatus.Delivered
-                    : ProjectStatus.Ready,
+                    : projectInfo.ProjectType == ProjectType.Investment
+                        ? ProjectStatus.Ready
+                        : ProjectStatus.Taken,
                 BudgetPlans = {projectInfo.BudgetPlans}
             };
 
@@ -279,7 +281,7 @@ namespace AElf.Contracts.DAOContract
                 CommitId = projectInfo.CommitId,
                 CurrentBudgetPlanIndex = projectInfo.CurrentBudgetPlanIndex,
                 PreAuditionHash = projectInfo.PreAuditionHash,
-                Status = projectInfo.Status,
+                Status = ProjectStatus.Taken,
                 BudgetPlans = {targetBudgetPlan}
             };
             var proposalId = CreateProposalToDeveloperOrganization(developerOrganizationAddress,
