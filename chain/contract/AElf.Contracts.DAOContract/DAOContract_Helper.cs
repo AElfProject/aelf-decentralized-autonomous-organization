@@ -25,8 +25,8 @@ namespace AElf.Contracts.DAOContract
                 ToAddress = State.AssociationContract.Value
             };
             State.AssociationContract.CreateProposal.Send(createProposalInput);
-            // TODO: Association Contract need to help calculating proposal id.
-            var proposalId = State.AssociationContract.CreateProposal.Call(createProposalInput);
+            var proposalId = Context.GenerateId(State.AssociationContract.Value,
+                HashHelper.ComputeFrom(createProposalInput));
             State.AssociationContract.Approve.Send(proposalId);
             State.AssociationContract.Release.Send(proposalId);
         }
@@ -42,7 +42,8 @@ namespace AElf.Contracts.DAOContract
                 ToAddress = Context.Self
             };
             State.ParliamentContract.CreateProposal.Send(createProposalInput);
-            var proposalId = State.ParliamentContract.CreateProposal.Call(createProposalInput);
+            var proposalId = Context.GenerateId(State.ParliamentContract.Value,
+                HashHelper.ComputeFrom(createProposalInput));
             return proposalId;
         }
 
@@ -57,7 +58,8 @@ namespace AElf.Contracts.DAOContract
                 ToAddress = Context.Self
             };
             State.AssociationContract.CreateProposal.Send(createProposalInput);
-            var proposalId = State.AssociationContract.CreateProposal.Call(createProposalInput);
+            var proposalId = Context.GenerateId(State.AssociationContract.Value,
+                HashHelper.ComputeFrom(createProposalInput));
             return proposalId;
         }
 
@@ -73,7 +75,8 @@ namespace AElf.Contracts.DAOContract
                 ToAddress = Context.Self
             };
             State.AssociationContract.CreateProposal.Send(createProposalInput);
-            var proposalId = State.AssociationContract.CreateProposal.Call(createProposalInput);
+            var proposalId = Context.GenerateId(State.AssociationContract.Value,
+                HashHelper.ComputeFrom(createProposalInput));
             return proposalId;
         }
 
