@@ -120,7 +120,7 @@ namespace AElf.Contracts.DAOContract
                         Category = KernelConstants.DefaultRunnerCategory,
                         Code =
                             ByteString.CopyFrom(File.ReadAllBytes(typeof(DAOContract).Assembly.Location)),
-                        Name = Hash.FromString("AElf.ContractNames.DAOContract"),
+                        Name = HashHelper.ComputeFrom("AElf.ContractNames.DAO"),
                         TransactionMethodCallList =
                             new SystemContractDeploymentInput.Types.SystemTransactionMethodCallList()
                     })).Output;

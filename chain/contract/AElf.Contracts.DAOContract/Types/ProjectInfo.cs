@@ -8,7 +8,7 @@ namespace AElf.Contracts.DAOContract
     {
         public Hash GetProjectId()
         {
-            return Hash.FromString(CommitId.Append(PullRequestUrl));
+            return HashHelper.ComputeFrom(CommitId.Append(PullRequestUrl));
         }
     }
 }
