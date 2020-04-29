@@ -29,6 +29,9 @@ service DAOContract {
     rpc AdjustProposalReleaseThreshold (DAOProposalReleaseThreshold) returns (google.protobuf.Empty) {
     }
     
+    rpc ProjectPreAudition (ProjectPreAuditionInput) returns (aelf.Hash) {
+    }
+    
     // Investment Project Management
     //   Developer propose a project for DAO to approve.
     rpc ProposeProjectToDAO (ProposeProjectInput) returns (aelf.Hash) {
@@ -108,6 +111,11 @@ message DAOProposalReleaseThreshold {
     int64 maximal_rejection_threshold = 2;
     int64 maximal_abstention_threshold = 3;
     int64 minimal_vote_threshold = 4;
+}
+
+message ProjectPreAuditionInput {
+    string pull_request_url = 1;
+    string commit_id = 2;
 }
 
 message ProposeProjectInput {

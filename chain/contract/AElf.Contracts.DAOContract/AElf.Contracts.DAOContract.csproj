@@ -37,6 +37,9 @@
         <ContractReference Include="..\..\protobuf\profit_contract.proto">
             <Link>Protobuf/Proto/profit_contract.proto</Link>
         </ContractReference>
+        <ContractReference Include="..\..\protobuf\referendum_contract.proto">
+            <Link>Protobuf/Proto/referendum_contract.proto</Link>
+        </ContractReference>
         
         <ContractCode Include="..\..\protobuf\dao_contract.proto">
             <Link>Protobuf/Proto/dao_contract.proto</Link>

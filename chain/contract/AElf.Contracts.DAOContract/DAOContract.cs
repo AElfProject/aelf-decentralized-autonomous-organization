@@ -107,6 +107,11 @@ namespace AElf.Contracts.DAOContract
             return new Empty();
         }
 
+        public override Hash ProjectPreAudition(ProjectPreAuditionInput input)
+        {
+            return new Hash();
+        }
+
         public override Empty AdjustProposalReleaseThreshold(DAOProposalReleaseThreshold input)
         {
             Assert(State.DAOInitialMemberList.Value.Value.Contains(Context.Sender), "No permission.");

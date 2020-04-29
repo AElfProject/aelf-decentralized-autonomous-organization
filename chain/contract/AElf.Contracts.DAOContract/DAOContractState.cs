@@ -3,6 +3,7 @@ using AElf.Contracts.Consensus.AEDPoS;
 using AElf.Contracts.MultiToken;
 using AElf.Contracts.Parliament;
 using AElf.Contracts.Profit;
+using AElf.Contracts.Referendum;
 using AElf.Sdk.CSharp.State;
 using AElf.Types;
 
@@ -14,6 +15,7 @@ namespace AElf.Contracts.DAOContract
         internal AssociationContractContainer.AssociationContractReferenceState AssociationContract { get; set; }
         internal AEDPoSContractContainer.AEDPoSContractReferenceState ConsensusContract { get; set; }
         internal ParliamentContractContainer.ParliamentContractReferenceState ParliamentContract { get; set; }
+        internal ReferendumContractContainer.ReferendumContractReferenceState ReferendumContract { get; set; }
         internal TokenContractContainer.TokenContractReferenceState TokenContract { get; set; }
         internal ProfitContractContainer.ProfitContractReferenceState ProfitContract { get; set; }
 
@@ -39,5 +41,7 @@ namespace AElf.Contracts.DAOContract
         public MappedState<Hash, bool> CanBeReleased { get; set; }
 
         public MappedState<Hash, Address> DeveloperOrganizationAddress { get; set; }
+
+        public MappedState<Hash, bool> PreAuditionResult { get; set; }
     }
 }
