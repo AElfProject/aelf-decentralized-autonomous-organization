@@ -16,68 +16,73 @@ namespace AElf.Contracts.DAOContract
     {
         private void CreateProposalToAssociationContractAndRelease(string methodName, ByteString parameter)
         {
+            var proposalToken = HashHelper.XorAndCompute(HashHelper.ComputeFrom(parameter.ToByteArray()),
+                Context.PreviousBlockHash);
             var createProposalInput = new CreateProposalInput
             {
                 ContractMethodName = methodName,
                 Params = parameter,
                 OrganizationAddress = State.OrganizationAddress.Value,
                 ExpiredTime = GetExpiredTime(),
-                ToAddress = State.AssociationContract.Value
+                ToAddress = State.AssociationContract.Value,
+                Token = proposalToken
             };
             State.AssociationContract.CreateProposal.Send(createProposalInput);
-            var proposalId = Context.GenerateId(State.AssociationContract.Value,
-                HashHelper.ComputeFrom(createProposalInput));
+            var proposalId = Context.GenerateId(State.AssociationContract.Value, proposalToken);
             State.AssociationContract.Approve.Send(proposalId);
             State.AssociationContract.Release.Send(proposalId);
         }
 
         private Hash CreateProposalToParliament(string methodName, ByteString parameter)
         {
+            var proposalToken = HashHelper.XorAndCompute(HashHelper.ComputeFrom(parameter.ToByteArray()),
+                Context.PreviousBlockHash);
             var createProposalInput = new CreateProposalInput
             {
                 ContractMethodName = methodName,
                 Params = parameter,
                 OrganizationAddress = State.ParliamentDefaultAddress.Value,
                 ExpiredTime = GetExpiredTime(),
-                ToAddress = Context.Self
+                ToAddress = Context.Self,
+                Token = proposalToken
             };
             State.ParliamentContract.CreateProposal.Send(createProposalInput);
-            var proposalId = Context.GenerateId(State.ParliamentContract.Value,
-                HashHelper.ComputeFrom(createProposalInput));
-            return proposalId;
+            return Context.GenerateId(State.ParliamentContract.Value, proposalToken);
         }
 
         private Hash CreateProposalToSelf(string methodName, ByteString parameter)
         {
+            var proposalToken = HashHelper.XorAndCompute(HashHelper.ComputeFrom(parameter.ToByteArray()),
+                Context.PreviousBlockHash);
             var createProposalInput = new CreateProposalInput
             {
                 ContractMethodName = methodName,
                 Params = parameter,
                 OrganizationAddress = State.OrganizationAddress.Value,
                 ExpiredTime = GetExpiredTime(),
-                ToAddress = Context.Self
+                ToAddress = Context.Self,
+                Token = proposalToken
             };
             State.AssociationContract.CreateProposal.Send(createProposalInput);
-            var proposalId = Context.GenerateId(State.AssociationContract.Value,
-                HashHelper.ComputeFrom(createProposalInput));
-            return proposalId;
+            return Context.GenerateId(State.AssociationContract.Value, proposalToken);
         }
 
         private Hash CreateProposalToDeveloperOrganization(Address developerOrganizationAddress, string methodName,
             ByteString parameter)
         {
+            var proposalToken = HashHelper.XorAndCompute(HashHelper.ComputeFrom(parameter.ToByteArray()),
+                Context.PreviousBlockHash);
             var createProposalInput = new CreateProposalInput
             {
                 ContractMethodName = methodName,
                 Params = parameter,
                 OrganizationAddress = developerOrganizationAddress,
                 ExpiredTime = GetExpiredTime(),
-                ToAddress = Context.Self
+                ToAddress = Context.Self,
+                Token = proposalToken
             };
             State.AssociationContract.CreateProposal.Send(createProposalInput);
-            var proposalId = Context.GenerateId(State.AssociationContract.Value,
-                HashHelper.ComputeFrom(createProposalInput));
-            return proposalId;
+            return Context.GenerateId(State.AssociationContract.Value, proposalToken);
         }
 
         private Timestamp GetExpiredTime()
@@ -163,21 +168,16 @@ namespace AElf.Contracts.DAOContract
 
         private Hash CreateProfitScheme(ProjectInfo projectInfo)
         {
-            State.ProfitContract.CreateScheme.Send(new CreateSchemeInput
+            var token = HashHelper.ComputeFrom(projectInfo);
+            var createSchemeInput = new CreateSchemeInput
             {
                 Manager = projectInfo.VirtualAddress,
                 IsReleaseAllBalanceEveryTimeByDefault = true,
-                CanRemoveBeneficiaryDirectly = true
-            });
-
-            var profitSchemeId = State.ProfitContract.CreateScheme.Call(new CreateSchemeInput
-            {
-                Manager = projectInfo.VirtualAddress,
-                IsReleaseAllBalanceEveryTimeByDefault = true,
-                CanRemoveBeneficiaryDirectly = true
-            });
-
-            return profitSchemeId;
+                CanRemoveBeneficiaryDirectly = true,
+                Token = token
+            };
+            State.ProfitContract.CreateScheme.Send(createSchemeInput);
+            return Context.GenerateId(State.ProfitContract.Value, token);
         }
 
         private void AddBeneficiaryForInvestmentProject(ProjectInfo projectInfo)
