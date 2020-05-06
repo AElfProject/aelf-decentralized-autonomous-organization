@@ -10,14 +10,14 @@ namespace AElf.Contracts.DAOContract
 {
     public partial class DaoContractTest
     {
-        private const string InvestmentProjectPullRequestUrl = "https://github.com/AElfProject/AElf/pull/111111";
-        private const string InvestmentProjectCommitId = "investmentprojectcommitid";
-        private const string InvestmentProjectDeliverPullRequestUrl = "https://github.com/AElfProject/AElf/pull/222222";
-        private const string InvestmentProjectDeliverCommitId = "investmentprojectdelivercommitid";
-        private const string RewardProjectPullRequestUrl = "https://github.com/AElfProject/AElf/pull/333333";
-        private const string RewardProjectCommitId = "rewardprojectcommitid";
-        private const string RewardProjectDeliverPullRequestUrl = "https://github.com/AElfProject/AElf/pull/444444";
-        private const string RewardProjectDeliverCommitId = "rewarddeliverprojectcommitid";
+        private const string GrantProjectPullRequestUrl = "https://github.com/AElfProject/AElf/pull/111111";
+        private const string GrantProjectCommitId = "grant_project_commit_id";
+        private const string GrantProjectDeliverPullRequestUrl = "https://github.com/AElfProject/AElf/pull/222222";
+        private const string GrantProjectDeliverCommitId = "grant_project_deliver_commit_id";
+        private const string BountyProjectPullRequestUrl = "https://github.com/AElfProject/AElf/pull/333333";
+        private const string BountyProjectCommitId = "bounty_project_commit_id";
+        private const string BountyProjectDeliverPullRequestUrl = "https://github.com/AElfProject/AElf/pull/444444";
+        private const string BountyProjectDeliverCommitId = "bounty_project_deliver_commit_id";
 
         private const long InvestAmount = 1000_00000000;
 
@@ -41,8 +41,8 @@ namespace AElf.Contracts.DAOContract
             // Alice want to propose a project to DAO.
             var proposalId = (await AliceDAOContractStub.ProposeProjectToDAO.SendAsync(new ProposeProjectInput
             {
-                PullRequestUrl = InvestmentProjectPullRequestUrl,
-                CommitId = InvestmentProjectCommitId
+                PullRequestUrl = GrantProjectPullRequestUrl,
+                CommitId = GrantProjectCommitId
             })).Output;
 
             // Check proposal exists and correct.
@@ -59,8 +59,8 @@ namespace AElf.Contracts.DAOContract
             var proposalId = await ProposeProjectToDAO_Test();
             var projectId = await DAOContractStub.CalculateProjectId.CallAsync(new ProposeProjectInput
             {
-                PullRequestUrl = InvestmentProjectPullRequestUrl,
-                CommitId = InvestmentProjectCommitId
+                PullRequestUrl = GrantProjectPullRequestUrl,
+                CommitId = GrantProjectCommitId
             });
 
             await DAOApproveAsync(proposalId);
@@ -74,8 +74,8 @@ namespace AElf.Contracts.DAOContract
 
             // Check project info.
             var projectInfo = await DAOContractStub.GetProjectInfo.CallAsync(projectId);
-            projectInfo.PullRequestUrl.ShouldBe(InvestmentProjectPullRequestUrl);
-            projectInfo.CommitId.ShouldBe(InvestmentProjectCommitId);
+            projectInfo.PullRequestUrl.ShouldBe(GrantProjectPullRequestUrl);
+            projectInfo.CommitId.ShouldBe(GrantProjectCommitId);
             projectInfo.VirtualAddress.ShouldNotBeNull();
             projectInfo.Status.ShouldBe(ProjectStatus.Proposed);
 
@@ -109,8 +109,8 @@ namespace AElf.Contracts.DAOContract
 
             // Check project info.
             var projectInfo = await DAOContractStub.GetProjectInfo.CallAsync(projectId);
-            projectInfo.PullRequestUrl.ShouldBe(InvestmentProjectPullRequestUrl);
-            projectInfo.CommitId.ShouldBe(InvestmentProjectCommitId);
+            projectInfo.PullRequestUrl.ShouldBe(GrantProjectPullRequestUrl);
+            projectInfo.CommitId.ShouldBe(GrantProjectCommitId);
             projectInfo.Status.ShouldBe(ProjectStatus.Approved);
             projectInfo.ProfitSchemeId.ShouldNotBeNull();
             projectInfo.BudgetPlans.ShouldBe(BudgetPlans);
@@ -120,7 +120,7 @@ namespace AElf.Contracts.DAOContract
         }
 
         [Fact]
-        public async Task<Hash> InvestToInvestmentProjectTest()
+        public async Task<Hash> InvestToGrantProjectTest()
         {
             var projectId = await ProposeProjectToParliament_Test();
 
@@ -154,16 +154,16 @@ namespace AElf.Contracts.DAOContract
         }
 
         [Fact]
-        public async Task DeliverInvestmentProjectTest()
+        public async Task DeliverGrantProjectTest()
         {
-            var projectId = await InvestToInvestmentProjectTest();
+            var projectId = await InvestToGrantProjectTest();
 
             // Alice want to deliver project.
             var proposalId = (await AliceDAOContractStub.ProposeDeliver.SendAsync(new ProposeAuditionInput
             {
                 ProjectId = projectId,
-                DeliverPullRequestUrl = InvestmentProjectDeliverPullRequestUrl,
-                DeliverCommitId = InvestmentProjectDeliverCommitId,
+                DeliverPullRequestUrl = GrantProjectDeliverPullRequestUrl,
+                DeliverCommitId = GrantProjectDeliverCommitId,
                 BudgetPlanIndex = 0
             })).Output;
 
@@ -216,16 +216,17 @@ namespace AElf.Contracts.DAOContract
         }
 
         [Fact]
-        public async Task<Hash> ProposeRewardProject_Test()
+        public async Task<Hash> ProposeBountyProject_Test()
         {
             await InitialDAOContract();
 
             var proposeProjectInput = new ProposeProjectInput
             {
-                PullRequestUrl = RewardProjectPullRequestUrl,
-                CommitId = RewardProjectCommitId
+                PullRequestUrl = BountyProjectPullRequestUrl,
+                CommitId = BountyProjectCommitId,
+                IsDevelopersAuditionRequired = true
             };
-            // One DAO member propose a reward project.
+            // One DAO member propose a bounty project.
             var proposalId = (await DAOContractStub.ProposeBountyProject.SendAsync(proposeProjectInput)).Output;
 
             await DAOApproveAsync(proposalId);
@@ -241,19 +242,19 @@ namespace AElf.Contracts.DAOContract
 
             // Check project info.
             var projectInfo = await DAOContractStub.GetProjectInfo.CallAsync(projectId);
-            projectInfo.PullRequestUrl.ShouldBe(RewardProjectPullRequestUrl);
-            projectInfo.CommitId.ShouldBe(RewardProjectCommitId);
+            projectInfo.PullRequestUrl.ShouldBe(BountyProjectPullRequestUrl);
+            projectInfo.CommitId.ShouldBe(BountyProjectCommitId);
             projectInfo.VirtualAddress.ShouldNotBeNull();
             projectInfo.Status.ShouldBe(ProjectStatus.Proposed);
 
             return projectId;
         }
 
-        public async Task<Hash> ProposeIssueRewardProject_Test()
+        public async Task<Hash> ProposeIssueBountyProject_Test()
         {
-            var projectId = await ProposeRewardProject_Test();
+            var projectId = await ProposeBountyProject_Test();
 
-            // DAO member propose this reward project with budget plans.
+            // DAO member propose this bounty project with budget plans.
             var proposalId = (await DAOContractStub.ProposeIssueBountyProject.SendAsync(
                 new ProposeProjectWithBudgetsInput
                 {
@@ -279,9 +280,9 @@ namespace AElf.Contracts.DAOContract
         }
 
         [Fact]
-        public async Task<Hash> InvestToRewardProjectTest()
+        public async Task<Hash> InvestToBountyProjectTest()
         {
-            var projectId = await ProposeIssueRewardProject_Test();
+            var projectId = await ProposeIssueBountyProject_Test();
 
             await CheckProjectStatus(projectId, ProjectStatus.Approved);
 
@@ -304,9 +305,9 @@ namespace AElf.Contracts.DAOContract
         }
 
         [Fact]
-        public async Task<Hash> TakeOverRewardProjectTest()
+        public async Task<Hash> TakeOverBountyProjectTest()
         {
-            var projectId = await InvestToRewardProjectTest();
+            var projectId = await InvestToBountyProjectTest();
 
             // Bob want to take over this project.
             var proposalId = (await BobDAOContractStub.ProposeTakeOverBountyProject.SendAsync(
@@ -333,14 +334,14 @@ namespace AElf.Contracts.DAOContract
         [Fact]
         public async Task<Hash> DevelopersAuditionTest()
         {
-            var projectId = await TakeOverRewardProjectTest();
+            var projectId = await TakeOverBountyProjectTest();
 
             // Bob want to commit his works for developers to audit.
             var proposalId = (await BobDAOContractStub.ProposeDevelopersAudition.SendAsync(new ProposeAuditionInput
             {
                 ProjectId = projectId,
-                DeliverPullRequestUrl = RewardProjectDeliverPullRequestUrl,
-                DeliverCommitId = RewardProjectDeliverCommitId,
+                DeliverPullRequestUrl = BountyProjectDeliverPullRequestUrl,
+                DeliverCommitId = BountyProjectDeliverCommitId,
                 BudgetPlanIndex = 0
             })).Output;
 
@@ -360,7 +361,24 @@ namespace AElf.Contracts.DAOContract
         }
 
         [Fact]
-        public async Task DeliverRewardProjectTest()
+        public async Task DeliverBountyProjectWithoutDevelopersAuditionTest()
+        {
+            var projectId = await TakeOverBountyProjectTest();
+            
+            // Bob want to deliver project.
+            var txResult = (await BobDAOContractStub.ProposeDeliver.SendWithExceptionAsync(new ProposeAuditionInput
+            {
+                ProjectId = projectId,
+                DeliverPullRequestUrl = BountyProjectDeliverPullRequestUrl,
+                DeliverCommitId = BountyProjectDeliverCommitId,
+                BudgetPlanIndex = 0
+            })).TransactionResult;
+            
+            txResult.Error.ShouldContain("Project budget plans need to approved by developers before deliver.");
+        }
+
+        [Fact]
+        public async Task DeliverBountyProjectTest()
         {
             var projectId = await DevelopersAuditionTest();
 
@@ -368,8 +386,8 @@ namespace AElf.Contracts.DAOContract
             var proposalId = (await BobDAOContractStub.ProposeDeliver.SendAsync(new ProposeAuditionInput
             {
                 ProjectId = projectId,
-                DeliverPullRequestUrl = RewardProjectDeliverPullRequestUrl,
-                DeliverCommitId = RewardProjectDeliverCommitId,
+                DeliverPullRequestUrl = BountyProjectDeliverPullRequestUrl,
+                DeliverCommitId = BountyProjectDeliverCommitId,
                 BudgetPlanIndex = 0
             })).Output;
 
