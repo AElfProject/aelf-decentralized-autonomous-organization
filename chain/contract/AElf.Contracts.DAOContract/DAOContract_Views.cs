@@ -48,5 +48,13 @@ namespace AElf.Contracts.DAOContract
                 CommitId = input.CommitId
             }.GetProjectId();
         }
+
+        public override BoolValue GetPreAuditionResult(Hash input)
+        {
+            return new BoolValue
+            {
+                Value = State.PreAuditionResult[input]
+            };
+        }
     }
 }

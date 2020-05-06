@@ -29,7 +29,9 @@ service DAOContract {
     rpc AdjustProposalReleaseThreshold (DAOProposalReleaseThreshold) returns (google.protobuf.Empty) {
     }
     
-    rpc ProjectPreAudition (ProjectPreAuditionInput) returns (aelf.Hash) {
+    rpc ProjectPreAudition (ProjectPreAuditionInput) returns (aelf.Hash)  {
+    }
+    rpc SetReferendumOrganizationAddress (aelf.Address) returns (google.protobuf.Empty) {
     }
     
     // Investment Project Management
@@ -90,6 +92,9 @@ service DAOContract {
         option (aelf.is_view) = true;
     }
     rpc CalculateProjectId (ProposeProjectInput) returns (aelf.Hash) {
+        option (aelf.is_view) = true;
+    }
+    rpc GetPreAuditionResult (aelf.Hash) returns (google.protobuf.BoolValue) {
         option (aelf.is_view) = true;
     }
 }

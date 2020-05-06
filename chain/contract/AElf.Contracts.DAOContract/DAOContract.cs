@@ -27,6 +27,8 @@ namespace AElf.Contracts.DAOContract
                 Context.GetContractAddressByName(SmartContractConstants.TokenContractSystemName);
             State.ProfitContract.Value =
                 Context.GetContractAddressByName(SmartContractConstants.ProfitContractSystemName);
+            State.ReferendumContract.Value =
+                Context.GetContractAddressByName(SmartContractConstants.ReferendumContractSystemName);
 
             State.ParliamentDefaultAddress.Value =
                 State.ParliamentContract.GetDefaultOrganizationAddress.Call(new Empty());
@@ -109,7 +111,21 @@ namespace AElf.Contracts.DAOContract
 
         public override Hash ProjectPreAudition(ProjectPreAuditionInput input)
         {
+            Assert(Context.Sender == State.ReferendumOrganizationAddress.Value, "No permission.");
+            var project = new ProjectInfo
+            {
+                PullRequestUrl = input.PullRequestUrl,
+                CommitId = input.CommitId
+            };
+            State.PreAuditionResult[project.GetProjectId()] = true;
             return new Hash();
+        }
+
+        public override Empty SetReferendumOrganizationAddress(Address input)
+        {
+            Assert(Context.Sender == State.ParliamentDefaultAddress.Value, "No permission.");
+            State.ReferendumOrganizationAddress.Value = input;
+            return new Empty();
         }
 
         public override Empty AdjustProposalReleaseThreshold(DAOProposalReleaseThreshold input)

@@ -23,6 +23,8 @@ namespace AElf.Contracts.DAOContract
 
         public SingletonState<Address> ParliamentDefaultAddress { get; set; }
 
+        public SingletonState<Address> ReferendumOrganizationAddress { get; set; }
+
         public SingletonState<string> DepositSymbol { get; set; }
         public SingletonState<long> DepositAmount { get; set; }
         public SingletonState<MemberList> DAOMemberList { get; set; }
