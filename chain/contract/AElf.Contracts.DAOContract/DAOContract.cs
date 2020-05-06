@@ -218,16 +218,14 @@ namespace AElf.Contracts.DAOContract
         public override Hash ProposeDeliver(ProposeAuditionInput input)
         {
             var projectInfo = State.Projects[input.ProjectId];
-            Assert(
-                (projectInfo.CurrentBudgetPlanIndex == 0 && input.BudgetPlanIndex == 0) ||
-                projectInfo.CurrentBudgetPlanIndex.Add(1) == input.BudgetPlanIndex,
+            Assert(projectInfo.CurrentBudgetPlanIndex == input.BudgetPlanIndex,
                 "Incorrect budget plan index.");
 
             var newProjectInfo = new ProjectInfo
             {
                 PullRequestUrl = projectInfo.PullRequestUrl,
                 CommitId = projectInfo.CommitId,
-                CurrentBudgetPlanIndex = input.BudgetPlanIndex,
+                CurrentBudgetPlanIndex = input.BudgetPlanIndex.Add(1),
                 Status = projectInfo.BudgetPlans.Select(p => p.Index).OrderBy(p => p).Last() == input.BudgetPlanIndex
                     ? ProjectStatus.Delivered
                     : projectInfo.ProjectType == ProjectType.Grant

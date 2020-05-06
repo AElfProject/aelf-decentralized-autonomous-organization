@@ -245,7 +245,7 @@ namespace AElf.Contracts.DAOContract
                 nameof(State.ProfitContract.DistributeProfits), new DistributeProfitsInput
                 {
                     SchemeId = projectInfoIsState.ProfitSchemeId,
-                    Period = projectInfoIsState.CurrentBudgetPlanIndex.Add(1),
+                    Period = inputProjectInfo.CurrentBudgetPlanIndex,
                     AmountsMap = {{budgetPlan.Symbol, budgetPlan.Amount}}
                 });
 
