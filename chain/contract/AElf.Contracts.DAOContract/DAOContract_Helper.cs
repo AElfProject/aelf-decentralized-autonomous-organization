@@ -301,11 +301,15 @@ namespace AElf.Contracts.DAOContract
             }
 
             Assert(projectInfo.Status == ProjectStatus.Proposed, "Incorrect status.");
-            if (projectType == ProjectType.Bounty)
+            foreach (var budgetPlan in input.BudgetPlans)
             {
-                foreach (var budgetPlan in input.BudgetPlans)
+                if (projectType == ProjectType.Bounty)
                 {
                     budgetPlan.ReceiverAddress = null;
+                }
+                else
+                {
+                    Assert(budgetPlan.ReceiverAddress != null, "Receiver address cannot be null for a grant project.");
                 }
             }
 

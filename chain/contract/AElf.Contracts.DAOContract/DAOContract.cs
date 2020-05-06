@@ -136,7 +136,7 @@ namespace AElf.Contracts.DAOContract
         }
 
         /// <summary>
-        /// Help developers to create a proposal for initializing an investment project.
+        /// Help developers to create a proposal for initializing an grant project.
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
