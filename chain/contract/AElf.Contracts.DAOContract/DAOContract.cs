@@ -236,7 +236,7 @@ namespace AElf.Contracts.DAOContract
                 BudgetPlans = {projectInfo.BudgetPlans.Single(p => p.Index == input.BudgetPlanIndex)}
             };
 
-            if (projectInfo.ProjectType == ProjectType.Reward)
+            if (projectInfo.ProjectType == ProjectType.Reward && projectInfo.IsDevelopersAuditionRequired)
             {
                 Assert(projectInfo.BudgetPlans.All(p => p.IsApprovedByDevelopers),
                     "Project budget plans need to approved by developers before deliver.");
@@ -259,7 +259,8 @@ namespace AElf.Contracts.DAOContract
         {
             Assert(State.DAOMemberList.Value.Value.Contains(Context.Sender),
                 "Only DAO Member can propose reward project.");
-            return ProposeToAddProject(input.PullRequestUrl, input.CommitId, ProjectType.Reward);
+            return ProposeToAddProject(input.PullRequestUrl, input.CommitId, ProjectType.Reward,
+                input.IsDevelopersAuditionRequired);
         }
 
         public override Hash ProposeIssueRewardProject(ProposeProjectWithBudgetsInput input)

@@ -197,7 +197,7 @@ namespace AElf.Contracts.DAOContract
                     }.ToByteString());
             }
         }
-        
+
         private void AddBeneficiaryForRewardProject(ProjectInfo projectInfo)
         {
             var budgetPlan = projectInfo.BudgetPlans.Single(p => p.Index == projectInfo.CurrentBudgetPlanIndex);
@@ -265,7 +265,8 @@ namespace AElf.Contracts.DAOContract
             // TODO: Some checks about BudgetPlans, like correctness of indices and phases.
         }
 
-        private Hash ProposeToAddProject(string pullRequestUrl, string commitId, ProjectType projectType)
+        private Hash ProposeToAddProject(string pullRequestUrl, string commitId, ProjectType projectType,
+            bool isDevelopersAuditionRequired = false)
         {
             var projectInfo = new ProjectInfo
             {
@@ -273,7 +274,8 @@ namespace AElf.Contracts.DAOContract
                 CommitId = commitId,
                 // Initial status of an investment project.
                 Status = ProjectStatus.Proposed,
-                ProjectType = projectType
+                ProjectType = projectType,
+                IsDevelopersAuditionRequired = isDevelopersAuditionRequired
             };
             var projectId = projectInfo.GetProjectId();
             Assert(State.Projects[projectId] == null, "Project already proposed successfully before.");
@@ -290,6 +292,7 @@ namespace AElf.Contracts.DAOContract
             {
                 throw new AssertionException("Project not found.");
             }
+
             Assert(projectInfo.Status == ProjectStatus.Proposed, "Incorrect status.");
             if (projectType == ProjectType.Reward)
             {
@@ -307,7 +310,8 @@ namespace AElf.Contracts.DAOContract
                     PullRequestUrl = projectInfo.PullRequestUrl,
                     CommitId = projectInfo.CommitId,
                     Status = ProjectStatus.Approved,
-                    BudgetPlans = {input.BudgetPlans}
+                    BudgetPlans = {input.BudgetPlans},
+                    IsDevelopersAuditionRequired = projectInfo.IsDevelopersAuditionRequired
                 }.ToByteString());
             return proposalId;
         }

@@ -127,6 +127,7 @@ message ProposeProjectInput {
     string pull_request_url = 1;
     string commit_id = 2;
     aelf.Hash pre_audition_hash = 3;
+    bool is_developers_audition_required = 4;
 }
 
 message ProposeProjectWithBudgetsInput {
@@ -177,6 +178,7 @@ message ProjectInfo {
     aelf.Hash profit_scheme_id = 7;
     aelf.Address virtual_address = 8;// Save budgets and act as profit scheme manager.
     ProjectType project_type = 9;
+    bool is_developers_audition_required = 10;
 }
 
 message InvestInput {

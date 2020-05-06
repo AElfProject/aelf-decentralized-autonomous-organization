@@ -20,7 +20,8 @@ namespace AElf.Contracts.DAOContract
                 CommitId = input.CommitId,
                 PreAuditionHash = input.PreAuditionHash,
                 VirtualAddress = Context.ConvertVirtualAddressToContractAddress(projectId),
-                ProjectType = input.ProjectType
+                ProjectType = input.ProjectType,
+                IsDevelopersAuditionRequired = input.IsDevelopersAuditionRequired
             };
             return new Empty();
         }
@@ -145,7 +146,8 @@ namespace AElf.Contracts.DAOContract
 
                 // If all budget plans are approved by developers, next steps are pay budgets after approved by DAO.
                 if (currentProject.Status == ProjectStatus.Taken &&
-                    currentProject.BudgetPlans.All(p => p.IsApprovedByDevelopers))
+                    (currentProject.BudgetPlans.All(p => p.IsApprovedByDevelopers) ||
+                     !currentProject.IsDevelopersAuditionRequired))
                 {
                     PayBudget(currentProject, input);
                 }
