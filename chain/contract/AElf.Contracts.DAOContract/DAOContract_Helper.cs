@@ -286,7 +286,11 @@ namespace AElf.Contracts.DAOContract
             ProjectType projectType)
         {
             var projectInfo = State.Projects[input.ProjectId];
-            Assert(projectInfo != null, "Project not found.");
+            if (projectInfo == null)
+            {
+                throw new AssertionException("Project not found.");
+            }
+            Assert(projectInfo.Status == ProjectStatus.Proposed, "Incorrect status.");
             if (projectType == ProjectType.Reward)
             {
                 foreach (var budgetPlan in input.BudgetPlans)

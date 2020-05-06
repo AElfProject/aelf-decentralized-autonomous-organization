@@ -236,6 +236,12 @@ namespace AElf.Contracts.DAOContract
                 BudgetPlans = {projectInfo.BudgetPlans.Single(p => p.Index == input.BudgetPlanIndex)}
             };
 
+            if (projectInfo.ProjectType == ProjectType.Reward)
+            {
+                Assert(projectInfo.BudgetPlans.All(p => p.IsApprovedByDevelopers),
+                    "Project budget plans need to approved by developers before deliver.");
+            }
+
             var budgetPlan = newProjectInfo.BudgetPlans.SingleOrDefault(p => p.Index == input.BudgetPlanIndex);
             Assert(budgetPlan != null, "Budget Plan not found.");
             // ReSharper disable once PossibleNullReferenceException
@@ -269,6 +275,7 @@ namespace AElf.Contracts.DAOContract
             Assert(projectInfo != null, "Project not found.");
             // ReSharper disable once PossibleNullReferenceException
             Assert(projectInfo.ProjectType == ProjectType.Reward, "Only reward project support this option.");
+            Assert(projectInfo.Status == ProjectStatus.Ready, "Reward not ready.");
             var takenBudgetPlanIndices = projectInfo.BudgetPlans.Where(p => p.ReceiverAddress != null)
                 .Select(p => p.Index).ToList();
             Assert(!takenBudgetPlanIndices.Any(i => input.BudgetPlanIndices.Contains(i)),
@@ -299,7 +306,12 @@ namespace AElf.Contracts.DAOContract
         public override Hash ProposeDevelopersAudition(ProposeAuditionInput input)
         {
             var projectInfo = State.Projects[input.ProjectId].Clone();
-            Assert(projectInfo != null, "Project not found.");
+            if (projectInfo == null)
+            {
+                throw new AssertionException("Project not found.");
+            }
+
+            Assert(projectInfo.Status == ProjectStatus.Taken, "Project needs to be taken.");
             var developerOrganizationAddress = State.DeveloperOrganizationAddress[input.ProjectId];
             // ReSharper disable once PossibleNullReferenceException
             var targetBudgetPlan = projectInfo.BudgetPlans.Single(p => p.Index == input.BudgetPlanIndex);
