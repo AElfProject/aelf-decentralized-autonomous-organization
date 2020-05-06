@@ -34,7 +34,7 @@ service DAOContract {
     rpc SetReferendumOrganizationAddress (aelf.Address) returns (google.protobuf.Empty) {
     }
     
-    // Investment Project Management
+    // Grant Project Management
     //   Developer propose a project for DAO to approve.
     rpc ProposeProjectToDAO (ProposeProjectInput) returns (aelf.Hash) {
     }
@@ -44,31 +44,31 @@ service DAOContract {
     rpc Invest (InvestInput) returns (google.protobuf.Empty) {
     }
     //   Interfaces used by DAO Contract itself.
-    rpc UpdateInvestmentProject (ProjectInfo) returns (google.protobuf.Empty) {
+    rpc UpdateGrantProject (ProjectInfo) returns (google.protobuf.Empty) {
     }
     
-    // Reward Project Management
-    //   DAO member project a reward project for DAO to approve.
-    rpc ProposeRewardProject (ProposeProjectInput) returns (aelf.Hash) {
+    // Bounty Project Management
+    //   DAO member project a bounty project for DAO to approve.
+    rpc ProposeBountyProject (ProposeProjectInput) returns (aelf.Hash) {
     }
-    //   DAO member project a reward project for parliament to approve (after DAO).
-    rpc ProposeIssueRewardProject (ProposeProjectWithBudgetsInput) returns (aelf.Hash) {
+    //   DAO member project a bounty project for parliament to approve (after DAO).
+    rpc ProposeIssueBountyProject (ProposeProjectWithBudgetsInput) returns (aelf.Hash) {
     }
-    //   Developer propose to take over a reward project.
-    rpc ProposeTakeOverRewardProject (ProposeTakeOverRewardProjectInput) returns (aelf.Hash) {
+    //   Developer propose to take over a bounty project.
+    rpc ProposeTakeOverBountyProject (ProposeTakeOverBountyProjectInput) returns (aelf.Hash) {
     }
     //   Developer propose an audition for all developers to approve.
     rpc ProposeDevelopersAudition (ProposeAuditionInput) returns (aelf.Hash) {
     }
     //   Interfaces used by DAO Contract itself.
-    rpc UpdateRewardProject (ProjectInfo) returns (google.protobuf.Empty) {
+    rpc UpdateBountyProject (ProjectInfo) returns (google.protobuf.Empty) {
     }
     
     // Common
     //   Developer propose to deliver project to DAO.
     rpc ProposeDeliver (ProposeAuditionInput) returns (aelf.Hash) {
     }
-    //   To add a project (either investment project or reward project).
+    //   To add a project (either grant project or bounty project).
     rpc AddProject (ProjectInfo) returns (google.protobuf.Empty) {
     }
     //   To remove a project.
@@ -154,7 +154,7 @@ message ProposeAuditionInput {
     int32 budget_plan_index = 4;
 }
 
-message ProposeTakeOverRewardProjectInput {
+message ProposeTakeOverBountyProjectInput {
     aelf.Hash project_id = 1;
     repeated int32 budget_plan_indices = 2;
 }
@@ -188,7 +188,7 @@ message InvestInput {
 }
 
 enum ProjectStatus {
-    PROPOSED = 0;// Proposed by developer (Investment) or by DAO member (Reward)
+    PROPOSED = 0;// Proposed by developer (Grant) or by DAO member (Bounty)
     APPROVED = 1;// Approved budget plans.
     READY = 2;// Budgets are ready.
     TAKEN = 3;// Developers taken this project.
@@ -196,8 +196,8 @@ enum ProjectStatus {
 }
 
 enum ProjectType {
-    INVESTMENT = 0;
-    REWARD = 1;
+    GRANT = 0;
+    BOUNTY = 1;
 }
 
 enum ProposalOrganizationType {

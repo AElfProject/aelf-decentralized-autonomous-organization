@@ -198,7 +198,7 @@ namespace AElf.Contracts.DAOContract
             }
         }
 
-        private void AddBeneficiaryForRewardProject(ProjectInfo projectInfo)
+        private void AddBeneficiaryForBountyProject(ProjectInfo projectInfo)
         {
             var budgetPlan = projectInfo.BudgetPlans.Single(p => p.Index == projectInfo.CurrentBudgetPlanIndex);
             if (projectInfo.CurrentBudgetPlanIndex > 0)
@@ -262,7 +262,14 @@ namespace AElf.Contracts.DAOContract
 
         private void CheckBudgetPlans(RepeatedField<BudgetPlan> budgetPlans)
         {
-            // TODO: Some checks about BudgetPlans, like correctness of indices and phases.
+            var indices = budgetPlans.Select(p => p.Index).ToList();
+            for (var i = 0; i < indices.Count().Sub(1); i++)
+            {
+                if (indices[i.Add(1)] <= indices[i])
+                {
+                    throw new AssertionException("Budget plans indices must in order.");
+                }
+            }
         }
 
         private Hash ProposeToAddProject(string pullRequestUrl, string commitId, ProjectType projectType,
@@ -294,7 +301,7 @@ namespace AElf.Contracts.DAOContract
             }
 
             Assert(projectInfo.Status == ProjectStatus.Proposed, "Incorrect status.");
-            if (projectType == ProjectType.Reward)
+            if (projectType == ProjectType.Bounty)
             {
                 foreach (var budgetPlan in input.BudgetPlans)
                 {
@@ -303,7 +310,7 @@ namespace AElf.Contracts.DAOContract
             }
 
             var proposalId = CreateProposalToParliament(
-                projectType == ProjectType.Investment ? nameof(UpdateInvestmentProject) : nameof(UpdateRewardProject),
+                projectType == ProjectType.Grant ? nameof(UpdateGrantProject) : nameof(UpdateBountyProject),
                 new ProjectInfo
                 {
                     // ReSharper disable once PossibleNullReferenceException

@@ -142,12 +142,12 @@ namespace AElf.Contracts.DAOContract
         /// <returns></returns>
         public override Hash ProposeProjectToDAO(ProposeProjectInput input)
         {
-            return ProposeToAddProject(input.PullRequestUrl, input.CommitId, ProjectType.Investment);
+            return ProposeToAddProject(input.PullRequestUrl, input.CommitId, ProjectType.Grant);
         }
 
         public override Hash ProposeProjectToParliament(ProposeProjectWithBudgetsInput input)
         {
-            return ProposedToUpdateProjectWithBudgetPlans(input, ProjectType.Investment);
+            return ProposedToUpdateProjectWithBudgetPlans(input, ProjectType.Grant);
         }
 
         public override Empty Invest(InvestInput input)
@@ -230,13 +230,13 @@ namespace AElf.Contracts.DAOContract
                 CurrentBudgetPlanIndex = input.BudgetPlanIndex,
                 Status = projectInfo.BudgetPlans.Select(p => p.Index).OrderBy(p => p).Last() == input.BudgetPlanIndex
                     ? ProjectStatus.Delivered
-                    : projectInfo.ProjectType == ProjectType.Investment
+                    : projectInfo.ProjectType == ProjectType.Grant
                         ? ProjectStatus.Ready
                         : ProjectStatus.Taken,
                 BudgetPlans = {projectInfo.BudgetPlans.Single(p => p.Index == input.BudgetPlanIndex)}
             };
 
-            if (projectInfo.ProjectType == ProjectType.Reward && projectInfo.IsDevelopersAuditionRequired)
+            if (projectInfo.ProjectType == ProjectType.Bounty && projectInfo.IsDevelopersAuditionRequired)
             {
                 Assert(projectInfo.BudgetPlans.All(p => p.IsApprovedByDevelopers),
                     "Project budget plans need to approved by developers before deliver.");
@@ -249,34 +249,34 @@ namespace AElf.Contracts.DAOContract
             budgetPlan.DeliverCommitId = input.DeliverCommitId;
             var proposalId =
                 CreateProposalToSelf(
-                    projectInfo.ProjectType == ProjectType.Investment
-                        ? nameof(UpdateInvestmentProject)
-                        : nameof(UpdateRewardProject), newProjectInfo.ToByteString());
+                    projectInfo.ProjectType == ProjectType.Grant
+                        ? nameof(UpdateGrantProject)
+                        : nameof(UpdateBountyProject), newProjectInfo.ToByteString());
             return proposalId;
         }
 
-        public override Hash ProposeRewardProject(ProposeProjectInput input)
+        public override Hash ProposeBountyProject(ProposeProjectInput input)
         {
             Assert(State.DAOMemberList.Value.Value.Contains(Context.Sender),
-                "Only DAO Member can propose reward project.");
-            return ProposeToAddProject(input.PullRequestUrl, input.CommitId, ProjectType.Reward,
+                "Only DAO Member can propose bounty project.");
+            return ProposeToAddProject(input.PullRequestUrl, input.CommitId, ProjectType.Bounty,
                 input.IsDevelopersAuditionRequired);
         }
 
-        public override Hash ProposeIssueRewardProject(ProposeProjectWithBudgetsInput input)
+        public override Hash ProposeIssueBountyProject(ProposeProjectWithBudgetsInput input)
         {
             Assert(State.DAOMemberList.Value.Value.Contains(Context.Sender),
-                "Only DAO Member can propose reward project.");
-            return ProposedToUpdateProjectWithBudgetPlans(input, ProjectType.Reward);
+                "Only DAO Member can propose bounty project.");
+            return ProposedToUpdateProjectWithBudgetPlans(input, ProjectType.Bounty);
         }
 
-        public override Hash ProposeTakeOverRewardProject(ProposeTakeOverRewardProjectInput input)
+        public override Hash ProposeTakeOverBountyProject(ProposeTakeOverBountyProjectInput input)
         {
             var projectInfo = State.Projects[input.ProjectId].Clone();
             Assert(projectInfo != null, "Project not found.");
             // ReSharper disable once PossibleNullReferenceException
-            Assert(projectInfo.ProjectType == ProjectType.Reward, "Only reward project support this option.");
-            Assert(projectInfo.Status == ProjectStatus.Ready, "Reward not ready.");
+            Assert(projectInfo.ProjectType == ProjectType.Bounty, "Only bounty project support this option.");
+            Assert(projectInfo.Status == ProjectStatus.Ready, "bounty not ready.");
             var takenBudgetPlanIndices = projectInfo.BudgetPlans.Where(p => p.ReceiverAddress != null)
                 .Select(p => p.Index).ToList();
             Assert(!takenBudgetPlanIndices.Any(i => input.BudgetPlanIndices.Contains(i)),
@@ -294,7 +294,7 @@ namespace AElf.Contracts.DAOContract
                          projectInfo.BudgetPlans.Count
                 ? ProjectStatus.Taken
                 : ProjectStatus.Ready;
-            return CreateProposalToSelf(nameof(UpdateRewardProject), new ProjectInfo
+            return CreateProposalToSelf(nameof(UpdateBountyProject), new ProjectInfo
             {
                 PullRequestUrl = projectInfo.PullRequestUrl,
                 CommitId = projectInfo.CommitId,
@@ -327,7 +327,7 @@ namespace AElf.Contracts.DAOContract
                 BudgetPlans = {targetBudgetPlan}
             };
             var proposalId = CreateProposalToDeveloperOrganization(developerOrganizationAddress,
-                nameof(UpdateRewardProject), newProjectInfo.ToByteString());
+                nameof(UpdateBountyProject), newProjectInfo.ToByteString());
             return proposalId;
         }
 

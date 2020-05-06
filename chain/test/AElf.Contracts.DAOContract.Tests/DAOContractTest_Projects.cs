@@ -147,7 +147,7 @@ namespace AElf.Contracts.DAOContract
             budgetPlan.Amount.ShouldBe(InvestAmount);
             budgetPlan.PaidInAmount.ShouldBe(InvestAmount);
             budgetPlan.Phase.ShouldBe(1);
-            
+
             await CheckProjectStatus(projectId, ProjectStatus.Ready);
 
             return projectId;
@@ -226,10 +226,10 @@ namespace AElf.Contracts.DAOContract
                 CommitId = RewardProjectCommitId
             };
             // One DAO member propose a reward project.
-            var proposalId = (await DAOContractStub.ProposeRewardProject.SendAsync(proposeProjectInput)).Output;
-            
+            var proposalId = (await DAOContractStub.ProposeBountyProject.SendAsync(proposeProjectInput)).Output;
+
             await DAOApproveAsync(proposalId);
-            
+
             var projectId = await DAOContractStub.CalculateProjectId.CallAsync(proposeProjectInput);
 
             await DAOContractStub.ReleaseProposal.SendAsync(new ReleaseProposalInput
@@ -252,9 +252,9 @@ namespace AElf.Contracts.DAOContract
         public async Task<Hash> ProposeIssueRewardProject_Test()
         {
             var projectId = await ProposeRewardProject_Test();
-            
+
             // DAO member propose this reward project with budget plans.
-            var proposalId = (await DAOContractStub.ProposeIssueRewardProject.SendAsync(
+            var proposalId = (await DAOContractStub.ProposeIssueBountyProject.SendAsync(
                 new ProposeProjectWithBudgetsInput
                 {
                     ProjectId = projectId,
@@ -277,7 +277,7 @@ namespace AElf.Contracts.DAOContract
 
             return projectId;
         }
-        
+
         [Fact]
         public async Task<Hash> InvestToRewardProjectTest()
         {
@@ -307,10 +307,10 @@ namespace AElf.Contracts.DAOContract
         public async Task<Hash> TakeOverRewardProjectTest()
         {
             var projectId = await InvestToRewardProjectTest();
-            
+
             // Bob want to take over this project.
-            var proposalId = (await BobDAOContractStub.ProposeTakeOverRewardProject.SendAsync(
-                new ProposeTakeOverRewardProjectInput
+            var proposalId = (await BobDAOContractStub.ProposeTakeOverBountyProject.SendAsync(
+                new ProposeTakeOverBountyProjectInput
                 {
                     ProjectId = projectId,
                     BudgetPlanIndices = {0}
@@ -329,12 +329,12 @@ namespace AElf.Contracts.DAOContract
 
             return projectId;
         }
-        
+
         [Fact]
         public async Task<Hash> DevelopersAuditionTest()
         {
             var projectId = await TakeOverRewardProjectTest();
-            
+
             // Bob want to commit his works for developers to audit.
             var proposalId = (await BobDAOContractStub.ProposeDevelopersAudition.SendAsync(new ProposeAuditionInput
             {

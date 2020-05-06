@@ -33,7 +33,7 @@ namespace AElf.Contracts.DAOContract
             return new Empty();
         }
 
-        public override Empty UpdateInvestmentProject(ProjectInfo input)
+        public override Empty UpdateGrantProject(ProjectInfo input)
         {
             var projectId = input.GetProjectId();
             CheckProjectProposalCanBeReleased(projectId);
@@ -74,12 +74,12 @@ namespace AElf.Contracts.DAOContract
             }
 
             currentProject.Status = input.Status;
-            currentProject.ProjectType = ProjectType.Investment;
+            currentProject.ProjectType = ProjectType.Grant;
             State.Projects[projectId] = currentProject;
             return new Empty();
         }
 
-        public override Empty UpdateRewardProject(ProjectInfo input)
+        public override Empty UpdateBountyProject(ProjectInfo input)
         {
             var projectId = input.GetProjectId();
             CheckProjectProposalCanBeReleased(projectId);
@@ -117,7 +117,7 @@ namespace AElf.Contracts.DAOContract
 
             if (input.Status == ProjectStatus.Taken || input.Status == ProjectStatus.Delivered)
             {
-                AddBeneficiaryForRewardProject(currentProject);
+                AddBeneficiaryForBountyProject(currentProject);
 
                 // Create organization for developers if all budget plans are taken.
                 if (currentProject.BudgetPlans.All(p => p.ReceiverAddress != null))
@@ -145,7 +145,7 @@ namespace AElf.Contracts.DAOContract
                 }
 
                 // If all budget plans are approved by developers, next steps are pay budgets after approved by DAO.
-                if (currentProject.Status == ProjectStatus.Taken &&
+                if (currentProject.Status == ProjectStatus.Taken && input.Status == ProjectStatus.Delivered &&
                     (currentProject.BudgetPlans.All(p => p.IsApprovedByDevelopers) ||
                      !currentProject.IsDevelopersAuditionRequired))
                 {
@@ -159,7 +159,7 @@ namespace AElf.Contracts.DAOContract
             }
 
             currentProject.Status = input.Status;
-            currentProject.ProjectType = ProjectType.Reward;
+            currentProject.ProjectType = ProjectType.Bounty;
             State.Projects[projectId] = currentProject;
             return new Empty();
         }
