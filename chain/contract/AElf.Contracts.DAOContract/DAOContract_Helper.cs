@@ -200,7 +200,8 @@ namespace AElf.Contracts.DAOContract
 
         private void AddBeneficiaryForBountyProject(ProjectInfo projectInfo)
         {
-            var budgetPlan = projectInfo.BudgetPlans.Single(p => p.Index == projectInfo.CurrentBudgetPlanIndex);
+            var budgetPlan = projectInfo.BudgetPlans.SingleOrDefault(p => p.Index == projectInfo.CurrentBudgetPlanIndex);
+            if (budgetPlan == null) return;
             if (projectInfo.CurrentBudgetPlanIndex > 0)
             {
                 var preBudgetPlanReceiver = projectInfo.BudgetPlans
@@ -229,10 +230,11 @@ namespace AElf.Contracts.DAOContract
         private void PayBudget(ProjectInfo projectInfoIsState, ProjectInfo inputProjectInfo)
         {
             var projectId = inputProjectInfo.GetProjectId();
+            var targetIndex = inputProjectInfo.CurrentBudgetPlanIndex.Sub(1);
             var budgetPlan =
-                projectInfoIsState.BudgetPlans.Single(p => p.Index == inputProjectInfo.CurrentBudgetPlanIndex);
+                projectInfoIsState.BudgetPlans.Single(p => p.Index == targetIndex);
             var inputBudgetPlan =
-                inputProjectInfo.BudgetPlans.Single(p => p.Index == inputProjectInfo.CurrentBudgetPlanIndex);
+                inputProjectInfo.BudgetPlans.Single(p => p.Index == targetIndex);
             Assert(budgetPlan.PaidInAmount == budgetPlan.Amount, "Budget not ready.");
             Context.SendVirtualInline(projectId, State.ProfitContract.Value,
                 nameof(State.ProfitContract.ContributeProfits), new ContributeProfitsInput
