@@ -146,7 +146,7 @@ namespace AElf.Contracts.DAOContract
                 }
 
                 // If all budget plans are approved by developers, next steps are pay budgets after approved by DAO.
-                if (currentProject.Status == ProjectStatus.Taken && input.Status == ProjectStatus.Delivered &&
+                if (currentProject.Status == ProjectStatus.Taken && input.CurrentBudgetPlanIndex > 0 &&
                     (currentProject.BudgetPlans.All(p => p.IsApprovedByDevelopers) ||
                      !currentProject.IsDevelopersAuditionRequired))
                 {
