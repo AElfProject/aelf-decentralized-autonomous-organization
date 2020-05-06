@@ -36,11 +36,13 @@ namespace AElf.Contracts.DAOContract
 
         internal ECKeyPair AliceKeyPair { get; set; } = SampleECKeyPairs.KeyPairs.Last();
         internal ECKeyPair BobKeyPair { get; set; } = SampleECKeyPairs.KeyPairs.Reverse().Skip(1).First();
+        internal ECKeyPair EanKeyPair { get; set; } = SampleECKeyPairs.KeyPairs.Reverse().Skip(2).First();
         internal ECKeyPair DefaultKeyPair { get; set; } = SampleECKeyPairs.KeyPairs.First();
         internal static List<ECKeyPair> InitialMinerKeyPairs => SampleECKeyPairs.KeyPairs.Take(5).ToList();
 
         internal Address AliceAddress => Address.FromPublicKey(AliceKeyPair.PublicKey);
         internal Address BobAddress => Address.FromPublicKey(BobKeyPair.PublicKey);
+        internal Address EanAddress => Address.FromPublicKey(EanKeyPair.PublicKey);
         internal Address DAOContractAddress { get; set; }
         internal Address TokenContractAddress { get; set; }
         internal Address ParliamentContractAddress { get; set; }

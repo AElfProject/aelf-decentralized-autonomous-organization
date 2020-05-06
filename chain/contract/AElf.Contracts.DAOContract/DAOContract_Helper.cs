@@ -180,7 +180,7 @@ namespace AElf.Contracts.DAOContract
             return Context.GenerateId(State.ProfitContract.Value, token);
         }
 
-        private void AddBeneficiaryForInvestmentProject(ProjectInfo projectInfo)
+        private void AddBeneficiaryForGrantProject(ProjectInfo projectInfo)
         {
             foreach (var budgetPlan in projectInfo.BudgetPlans)
             {
@@ -200,7 +200,8 @@ namespace AElf.Contracts.DAOContract
 
         private void AddBeneficiaryForBountyProject(ProjectInfo projectInfo)
         {
-            var budgetPlan = projectInfo.BudgetPlans.SingleOrDefault(p => p.Index == projectInfo.CurrentBudgetPlanIndex);
+            var targetIndex = projectInfo.CurrentBudgetPlanIndex.Sub(1);
+            var budgetPlan = projectInfo.BudgetPlans.SingleOrDefault(p => p.Index == targetIndex);
             if (budgetPlan == null) return;
             if (projectInfo.CurrentBudgetPlanIndex > 0)
             {
@@ -218,7 +219,7 @@ namespace AElf.Contracts.DAOContract
                 nameof(State.ProfitContract.AddBeneficiary), new AddBeneficiaryInput
                 {
                     SchemeId = projectInfo.ProfitSchemeId,
-                    EndPeriod = projectInfo.CurrentBudgetPlanIndex.Add(1),
+                    EndPeriod = projectInfo.CurrentBudgetPlanIndex,
                     BeneficiaryShare = new BeneficiaryShare
                     {
                         Beneficiary = budgetPlan.ReceiverAddress,

@@ -33,6 +33,24 @@ namespace AElf.Contracts.DAOContract
             }
         };
 
+        private List<BudgetPlan> BountyBudgetPlans => new List<BudgetPlan>
+        {
+            new BudgetPlan
+            {
+                Index = 0,
+                Phase = 1,
+                Symbol = "ELF",
+                Amount = 500_00000000
+            },
+            new BudgetPlan
+            {
+                Index = 1,
+                Phase = 2,
+                Symbol = "ELF",
+                Amount = 500_00000000
+            }
+        };
+
         [Fact]
         public async Task<Hash> ProposeProjectToDAO_Test()
         {
@@ -259,7 +277,7 @@ namespace AElf.Contracts.DAOContract
                 new ProposeProjectWithBudgetsInput
                 {
                     ProjectId = projectId,
-                    BudgetPlans = {BudgetPlans}
+                    BudgetPlans = {BountyBudgetPlans}
                 })).Output;
 
             await CheckProjectStatus(projectId, ProjectStatus.Proposed);
@@ -309,24 +327,48 @@ namespace AElf.Contracts.DAOContract
         {
             var projectId = await InvestToBountyProjectTest();
 
-            // Bob want to take over this project.
-            var proposalId = (await BobDAOContractStub.ProposeTakeOverBountyProject.SendAsync(
-                new ProposeTakeOverBountyProjectInput
+            // Bob wants to take over phase 1.
+            {
+                var proposalId = (await BobDAOContractStub.ProposeTakeOverBountyProject.SendAsync(
+                    new ProposeTakeOverBountyProjectInput
+                    {
+                        ProjectId = projectId,
+                        BudgetPlanIndices = {0}
+                    })).Output;
+
+                await DAOApproveAsync(proposalId);
+
+                await BobDAOContractStub.ReleaseProposal.SendAsync(new ReleaseProposalInput
                 {
                     ProjectId = projectId,
-                    BudgetPlanIndices = {0}
-                })).Output;
+                    ProposalId = proposalId,
+                    OrganizationType = ProposalOrganizationType.DAO
+                });
 
-            await DAOApproveAsync(proposalId);
+                await CheckProjectStatus(projectId, ProjectStatus.Ready);
+            }
 
-            await BobDAOContractStub.ReleaseProposal.SendAsync(new ReleaseProposalInput
+            // Ean wants to take over phase 2.
+
             {
-                ProjectId = projectId,
-                ProposalId = proposalId,
-                OrganizationType = ProposalOrganizationType.DAO
-            });
+                var proposalId = (await EanDAOContractStub.ProposeTakeOverBountyProject.SendAsync(
+                    new ProposeTakeOverBountyProjectInput
+                    {
+                        ProjectId = projectId,
+                        BudgetPlanIndices = {1}
+                    })).Output;
 
-            await CheckProjectStatus(projectId, ProjectStatus.Taken);
+                await DAOApproveAsync(proposalId);
+
+                await EanDAOContractStub.ReleaseProposal.SendAsync(new ReleaseProposalInput
+                {
+                    ProjectId = projectId,
+                    ProposalId = proposalId,
+                    OrganizationType = ProposalOrganizationType.DAO
+                });
+
+                await CheckProjectStatus(projectId, ProjectStatus.Taken);
+            }
 
             return projectId;
         }
@@ -336,26 +378,54 @@ namespace AElf.Contracts.DAOContract
         {
             var projectId = await TakeOverBountyProjectTest();
 
-            // Bob want to commit his works for developers to audit.
-            var proposalId = (await BobDAOContractStub.ProposeDevelopersAudition.SendAsync(new ProposeAuditionInput
+            // Bob wants to commit his works for developers to audit.
             {
-                ProjectId = projectId,
-                DeliverPullRequestUrl = BountyProjectDeliverPullRequestUrl,
-                DeliverCommitId = BountyProjectDeliverCommitId,
-                BudgetPlanIndex = 0
-            })).Output;
+                var proposalId = (await BobDAOContractStub.ProposeDevelopersAudition.SendAsync(new ProposeAuditionInput
+                {
+                    ProjectId = projectId,
+                    DeliverPullRequestUrl = BountyProjectDeliverPullRequestUrl,
+                    DeliverCommitId = BountyProjectDeliverCommitId,
+                    BudgetPlanIndex = 0
+                })).Output;
 
-            // Bob approves himself.
-            await BobAssociationContractStub.Approve.SendAsync(proposalId);
+                // Bob approves himself.
+                await BobAssociationContractStub.Approve.SendAsync(proposalId);
 
-            await DAOContractStub.ReleaseProposal.SendAsync(new ReleaseProposalInput
+                await DAOContractStub.ReleaseProposal.SendAsync(new ReleaseProposalInput
+                {
+                    ProjectId = projectId,
+                    ProposalId = proposalId,
+                    OrganizationType = ProposalOrganizationType.Developers
+                });
+
+                await CheckProjectStatus(projectId, ProjectStatus.Taken);
+            }
+
             {
-                ProjectId = projectId,
-                ProposalId = proposalId,
-                OrganizationType = ProposalOrganizationType.Developers
-            });
+                // Ean wants to commit his works for developers to audit.
+                {
+                    var proposalId = (await EanDAOContractStub.ProposeDevelopersAudition.SendAsync(
+                        new ProposeAuditionInput
+                        {
+                            ProjectId = projectId,
+                            DeliverPullRequestUrl = BountyProjectDeliverPullRequestUrl,
+                            DeliverCommitId = BountyProjectDeliverCommitId,
+                            BudgetPlanIndex = 1
+                        })).Output;
 
-            await CheckProjectStatus(projectId, ProjectStatus.Taken);
+                    // Ean approves himself.
+                    await EanAssociationContractStub.Approve.SendAsync(proposalId);
+
+                    await DAOContractStub.ReleaseProposal.SendAsync(new ReleaseProposalInput
+                    {
+                        ProjectId = projectId,
+                        ProposalId = proposalId,
+                        OrganizationType = ProposalOrganizationType.Developers
+                    });
+
+                    await CheckProjectStatus(projectId, ProjectStatus.Taken);
+                }
+            }
 
             return projectId;
         }
@@ -364,7 +434,7 @@ namespace AElf.Contracts.DAOContract
         public async Task DeliverBountyProjectWithoutDevelopersAuditionTest()
         {
             var projectId = await TakeOverBountyProjectTest();
-            
+
             // Bob want to deliver project.
             var txResult = (await BobDAOContractStub.ProposeDeliver.SendWithExceptionAsync(new ProposeAuditionInput
             {
@@ -373,7 +443,7 @@ namespace AElf.Contracts.DAOContract
                 DeliverCommitId = BountyProjectDeliverCommitId,
                 BudgetPlanIndex = 0
             })).TransactionResult;
-            
+
             txResult.Error.ShouldContain("Project budget plans need to approved by developers before deliver.");
         }
 
@@ -382,60 +452,138 @@ namespace AElf.Contracts.DAOContract
         {
             var projectId = await DevelopersAuditionTest();
 
-            // Bob want to deliver project.
-            var proposalId = (await BobDAOContractStub.ProposeDeliver.SendAsync(new ProposeAuditionInput
+            // Bob wants to deliver project.
             {
-                ProjectId = projectId,
-                DeliverPullRequestUrl = BountyProjectDeliverPullRequestUrl,
-                DeliverCommitId = BountyProjectDeliverCommitId,
-                BudgetPlanIndex = 0
-            })).Output;
-
-            await CheckProjectStatus(projectId, ProjectStatus.Taken);
-
-            await DAOApproveAsync(proposalId);
-            await DAOContractStub.ReleaseProposal.SendAsync(new ReleaseProposalInput
-            {
-                ProjectId = projectId,
-                ProposalId = proposalId,
-                OrganizationType = ProposalOrganizationType.DAO
-            });
-
-            await CheckProjectStatus(projectId, ProjectStatus.Delivered);
-
-            var budgetPlan = await DAOContractStub.GetBudgetPlan.CallAsync(new GetBudgetPlanInput
-            {
-                ProjectId = projectId,
-                BudgetPlanIndex = 0
-            });
-            budgetPlan.DeliverPullRequestUrl.ShouldNotBeEmpty();
-            budgetPlan.DeliverCommitId.ShouldNotBeEmpty();
-
-            {
-                var balance = await TokenContractStub.GetBalance.CallAsync(new GetBalanceInput
+                var proposalId = (await BobDAOContractStub.ProposeDeliver.SendAsync(new ProposeAuditionInput
                 {
-                    Owner = BobAddress,
-                    Symbol = "ELF"
+                    ProjectId = projectId,
+                    DeliverPullRequestUrl = BountyProjectDeliverPullRequestUrl,
+                    DeliverCommitId = BountyProjectDeliverCommitId,
+                    BudgetPlanIndex = 0
+                })).Output;
+
+                await CheckProjectStatus(projectId, ProjectStatus.Taken);
+
+                await DAOApproveAsync(proposalId);
+                await DAOContractStub.ReleaseProposal.SendAsync(new ReleaseProposalInput
+                {
+                    ProjectId = projectId,
+                    ProposalId = proposalId,
+                    OrganizationType = ProposalOrganizationType.DAO
                 });
-                balance.Balance.ShouldBe(0);
+
+                await CheckProjectStatus(projectId, ProjectStatus.Taken);
+
+                var budgetPlan = await DAOContractStub.GetBudgetPlan.CallAsync(new GetBudgetPlanInput
+                {
+                    ProjectId = projectId,
+                    BudgetPlanIndex = 0
+                });
+                budgetPlan.DeliverPullRequestUrl.ShouldNotBeEmpty();
+                budgetPlan.DeliverCommitId.ShouldNotBeEmpty();
+
+                {
+                    var balance = await TokenContractStub.GetBalance.CallAsync(new GetBalanceInput
+                    {
+                        Owner = BobAddress,
+                        Symbol = "ELF"
+                    });
+                    balance.Balance.ShouldBe(0);
+                }
+
+                var projectInfo = await DAOContractStub.GetProjectInfo.CallAsync(projectId);
+
+                {
+                    var balance = await TokenContractStub.GetBalance.CallAsync(new GetBalanceInput
+                    {
+                        Owner = projectInfo.VirtualAddress,
+                        Symbol = "ELF"
+                    });
+                    balance.Balance.ShouldBe(InvestAmount / 2);
+                }
+
+                // Bob takes rewards.
+                await BobProfitContractStub.ClaimProfits.SendAsync(new ClaimProfitsInput
+                {
+                    SchemeId = projectInfo.ProfitSchemeId,
+                    Beneficiary = BobAddress
+                });
+
+                {
+                    var balance = await TokenContractStub.GetBalance.CallAsync(new GetBalanceInput
+                    {
+                        Owner = BobAddress,
+                        Symbol = "ELF"
+                    });
+                    balance.Balance.ShouldBePositive();
+                }
             }
 
-            // Alice gonna take rewards.
-            var projectInfo = await DAOContractStub.GetProjectInfo.CallAsync(projectId);
-            var result = await BobProfitContractStub.ClaimProfits.SendAsync(new ClaimProfitsInput
+            // Ean wants to deliver project.
             {
-                SchemeId = projectInfo.ProfitSchemeId,
-                Beneficiary = BobAddress
-            });
-            result.TransactionResult.Status.ShouldBe(TransactionResultStatus.Mined);
-
-            {
-                var balance = await TokenContractStub.GetBalance.CallAsync(new GetBalanceInput
+                var proposalId = (await EanDAOContractStub.ProposeDeliver.SendAsync(new ProposeAuditionInput
                 {
-                    Owner = BobAddress,
-                    Symbol = "ELF"
+                    ProjectId = projectId,
+                    DeliverPullRequestUrl = BountyProjectDeliverPullRequestUrl,
+                    DeliverCommitId = BountyProjectDeliverCommitId,
+                    BudgetPlanIndex = 1
+                })).Output;
+
+                await CheckProjectStatus(projectId, ProjectStatus.Taken);
+
+                await DAOApproveAsync(proposalId);
+                await DAOContractStub.ReleaseProposal.SendAsync(new ReleaseProposalInput
+                {
+                    ProjectId = projectId,
+                    ProposalId = proposalId,
+                    OrganizationType = ProposalOrganizationType.DAO
                 });
-                balance.Balance.ShouldBePositive();
+
+                await CheckProjectStatus(projectId, ProjectStatus.Delivered);
+
+                var budgetPlan = await DAOContractStub.GetBudgetPlan.CallAsync(new GetBudgetPlanInput
+                {
+                    ProjectId = projectId,
+                    BudgetPlanIndex = 0
+                });
+                budgetPlan.DeliverPullRequestUrl.ShouldNotBeEmpty();
+                budgetPlan.DeliverCommitId.ShouldNotBeEmpty();
+
+                {
+                    var balance = await TokenContractStub.GetBalance.CallAsync(new GetBalanceInput
+                    {
+                        Owner = EanAddress,
+                        Symbol = "ELF"
+                    });
+                    balance.Balance.ShouldBe(0);
+                }
+
+                var projectInfo = await DAOContractStub.GetProjectInfo.CallAsync(projectId);
+
+                {
+                    var balance = await TokenContractStub.GetBalance.CallAsync(new GetBalanceInput
+                    {
+                        Owner = projectInfo.VirtualAddress,
+                        Symbol = "ELF"
+                    });
+                    balance.Balance.ShouldBe(0);
+                }
+
+                // Bob takes rewards.
+                await EanProfitContractStub.ClaimProfits.SendAsync(new ClaimProfitsInput
+                {
+                    SchemeId = projectInfo.ProfitSchemeId,
+                    Beneficiary = EanAddress
+                });
+
+                {
+                    var balance = await TokenContractStub.GetBalance.CallAsync(new GetBalanceInput
+                    {
+                        Owner = EanAddress,
+                        Symbol = "ELF"
+                    });
+                    balance.Balance.ShouldBePositive();
+                }
             }
         }
 

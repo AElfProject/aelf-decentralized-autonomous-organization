@@ -31,6 +31,14 @@ namespace AElf.Contracts.DAOContract
         private ProfitContractContainer.ProfitContractStub BobProfitContractStub => GetProfitContractStub(BobKeyPair);
         private AssociationContractContainer.AssociationContractStub BobAssociationContractStub => GetAssociationContractStub(BobKeyPair);
 
+        
+        private ParliamentContractContainer.ParliamentContractStub EanParliamentStub =>
+            GetParliamentContractStub(EanKeyPair);
+        private DAOContractContainer.DAOContractStub EanDAOContractStub => GetDAOContractStub(EanKeyPair);
+        private TokenContractContainer.TokenContractStub EanTokenContractStub => GetTokenContractStub(EanKeyPair);
+        private ProfitContractContainer.ProfitContractStub EanProfitContractStub => GetProfitContractStub(EanKeyPair);
+        private AssociationContractContainer.AssociationContractStub EanAssociationContractStub => GetAssociationContractStub(EanKeyPair);
+
         private async Task InitialDAOContract()
         {
             await DAOContractStub.Initialize.SendAsync(new InitializeInput

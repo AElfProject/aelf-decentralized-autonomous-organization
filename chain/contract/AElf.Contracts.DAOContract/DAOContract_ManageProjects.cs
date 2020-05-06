@@ -53,7 +53,7 @@ namespace AElf.Contracts.DAOContract
                 // Create project scheme and add developers as beneficiaries.
                 var profitSchemeId = CreateProfitScheme(currentProject);
                 currentProject.ProfitSchemeId = profitSchemeId;
-                AddBeneficiaryForInvestmentProject(currentProject);
+                AddBeneficiaryForGrantProject(currentProject);
             }
 
             if (input.Status == ProjectStatus.Ready || input.Status == ProjectStatus.Delivered)
@@ -117,8 +117,6 @@ namespace AElf.Contracts.DAOContract
 
             if (input.Status == ProjectStatus.Taken || input.Status == ProjectStatus.Delivered)
             {
-                AddBeneficiaryForBountyProject(currentProject);
-
                 // Create organization for developers if all budget plans are taken.
                 if (State.DeveloperOrganizationAddress[projectId] == null &&
                     currentProject.BudgetPlans.All(p => p.ReceiverAddress != null))
@@ -150,6 +148,7 @@ namespace AElf.Contracts.DAOContract
                     (currentProject.BudgetPlans.All(p => p.IsApprovedByDevelopers) ||
                      !currentProject.IsDevelopersAuditionRequired))
                 {
+                    AddBeneficiaryForBountyProject(currentProject);
                     PayBudget(currentProject, input);
                 }
             }
