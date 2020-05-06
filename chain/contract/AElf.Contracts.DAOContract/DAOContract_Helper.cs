@@ -301,6 +301,7 @@ namespace AElf.Contracts.DAOContract
             }
 
             Assert(projectInfo.Status == ProjectStatus.Proposed, "Incorrect status.");
+            Assert(projectInfo.ProjectType == projectType, "Incorrect project type.");
             foreach (var budgetPlan in input.BudgetPlans)
             {
                 if (projectType == ProjectType.Bounty)

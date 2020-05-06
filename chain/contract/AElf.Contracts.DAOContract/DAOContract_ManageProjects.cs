@@ -120,7 +120,8 @@ namespace AElf.Contracts.DAOContract
                 AddBeneficiaryForBountyProject(currentProject);
 
                 // Create organization for developers if all budget plans are taken.
-                if (currentProject.BudgetPlans.All(p => p.ReceiverAddress != null))
+                if (State.DeveloperOrganizationAddress[projectId] == null &&
+                    currentProject.BudgetPlans.All(p => p.ReceiverAddress != null))
                 {
                     var developerList = currentProject.BudgetPlans.Select(p => p.ReceiverAddress);
                     State.DeveloperOrganizationAddress[projectId] = CreateDeveloperOrganization(developerList);

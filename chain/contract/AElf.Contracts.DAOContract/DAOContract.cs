@@ -219,7 +219,7 @@ namespace AElf.Contracts.DAOContract
         {
             var projectInfo = State.Projects[input.ProjectId];
             Assert(
-                projectInfo.CurrentBudgetPlanIndex == 0 ||
+                (projectInfo.CurrentBudgetPlanIndex == 0 && input.BudgetPlanIndex == 0) ||
                 projectInfo.CurrentBudgetPlanIndex.Add(1) == input.BudgetPlanIndex,
                 "Incorrect budget plan index.");
 
