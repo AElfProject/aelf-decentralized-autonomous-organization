@@ -194,6 +194,7 @@ namespace AElf.Contracts.DAOContract
             {
                 throw new AssertionException("Project not found.");
             }
+
             Assert(projectInfo.Status == ProjectStatus.Approved, "Budget plans not added.");
             var totalBudgets = projectInfo.BudgetPlans.Where(p => p.Symbol == input.Symbol).Sum(p => p.Amount);
             var currentBalance = State.TokenContract.GetBalance.Call(new GetBalanceInput
@@ -258,6 +259,21 @@ namespace AElf.Contracts.DAOContract
         public override Hash ProposeDeliver(ProposeAuditionInput input)
         {
             var projectInfo = State.Projects[input.ProjectId];
+            if (projectInfo == null)
+            {
+                throw new AssertionException("Project not found.");
+            }
+
+            if (projectInfo.ProjectType == ProjectType.Grant)
+            {
+                Assert(projectInfo.Status == ProjectStatus.Ready, "Project not ready.");
+            }
+
+            if (projectInfo.ProjectType == ProjectType.Bounty)
+            {
+                Assert(projectInfo.Status == ProjectStatus.Taken, "Project not taken.");
+            }
+
             Assert(projectInfo.CurrentBudgetPlanIndex == input.BudgetPlanIndex,
                 "Incorrect budget plan index.");
 
