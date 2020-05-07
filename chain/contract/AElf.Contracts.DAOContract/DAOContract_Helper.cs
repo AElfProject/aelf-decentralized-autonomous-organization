@@ -142,7 +142,7 @@ namespace AElf.Contracts.DAOContract
 
         private void AdjustDAOProposalReleaseThreshold()
         {
-            var memberListCount = State.DAOInitialMemberList.Value.Value.Count;
+            var memberListCount = State.DAOMemberList.Value.Value.Count;
             State.DAOProposalReleaseThreshold.Value = new DAOProposalReleaseThreshold
             {
                 MaximalAbstentionThreshold = memberListCount.Div(2),
