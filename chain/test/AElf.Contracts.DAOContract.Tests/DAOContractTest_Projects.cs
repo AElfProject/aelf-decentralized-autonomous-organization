@@ -37,15 +37,15 @@ namespace AElf.Contracts.DAOContract
         {
             new BudgetPlan
             {
-                Index = 0,
-                Phase = 1,
+                Index = 1,
+                Phase = 2,
                 Symbol = "ELF",
                 Amount = 500_00000000
             },
             new BudgetPlan
             {
-                Index = 1,
-                Phase = 2,
+                Index = 0,
+                Phase = 1,
                 Symbol = "ELF",
                 Amount = 500_00000000
             }

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Acs3;
 using AElf.Contracts.Profit;
@@ -6,7 +7,6 @@ using AElf.CSharp.Core.Extension;
 using AElf.Sdk.CSharp;
 using AElf.Types;
 using Google.Protobuf;
-using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;
 
 namespace AElf.Contracts.DAOContract
@@ -267,10 +267,12 @@ namespace AElf.Contracts.DAOContract
             State.CanBeReleased.Remove(projectId);
         }
 
-        private void CheckBudgetPlans(RepeatedField<BudgetPlan> budgetPlans)
+        private void ValidateBudgetPlanIndices(IReadOnlyCollection<BudgetPlan> budgetPlans)
         {
+            if (!budgetPlans.Any()) return;
+            Assert(budgetPlans.First().Index == 0, "Budget plan index must start from 0.");
             var indices = budgetPlans.Select(p => p.Index).ToList();
-            for (var i = 0; i < indices.Count().Sub(1); i++)
+            for (var i = 0; i < indices.Count.Sub(1); i++)
             {
                 if (indices[i.Add(1)] <= indices[i])
                 {

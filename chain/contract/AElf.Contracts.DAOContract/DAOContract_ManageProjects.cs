@@ -47,8 +47,9 @@ namespace AElf.Contracts.DAOContract
             if (input.Status == ProjectStatus.Approved && currentProject.ProfitSchemeId == null)
             {
                 // Update budget plans.
-                CheckBudgetPlans(input.BudgetPlans);
-                currentProject.BudgetPlans.AddRange(input.BudgetPlans);
+                var budgetPlansWithOrder = input.BudgetPlans.OrderBy(p => p.Index).ToList();
+                ValidateBudgetPlanIndices(budgetPlansWithOrder);
+                currentProject.BudgetPlans.AddRange(budgetPlansWithOrder);
 
                 // Create project scheme and add developers as beneficiaries.
                 var profitSchemeId = CreateProfitScheme(currentProject);
@@ -91,8 +92,9 @@ namespace AElf.Contracts.DAOContract
 
             if (input.Status == ProjectStatus.Approved && currentProject.ProfitSchemeId == null)
             {
-                CheckBudgetPlans(input.BudgetPlans);
-                currentProject.BudgetPlans.AddRange(input.BudgetPlans);
+                var budgetPlansWithOrder = input.BudgetPlans.OrderBy(p => p.Index).ToList();
+                ValidateBudgetPlanIndices(budgetPlansWithOrder);
+                currentProject.BudgetPlans.AddRange(budgetPlansWithOrder);
                 var profitSchemeId = CreateProfitScheme(currentProject);
                 currentProject.ProfitSchemeId = profitSchemeId;
             }
