@@ -103,6 +103,9 @@ service DAOContract {
     rpc GetReferendumOrganizationAddress (google.protobuf.Empty) returns (aelf.Address) {
         option (aelf.is_view) = true;
     }
+    rpc GetDepositInfo (google.protobuf.Empty) returns (DepositInfo) {
+        option (aelf.is_view) = true;
+    }
 }
 
 message InitializeInput {

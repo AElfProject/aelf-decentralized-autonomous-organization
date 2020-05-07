@@ -56,5 +56,10 @@ namespace AElf.Contracts.DAOContract
                 Value = State.PreAuditionResult[input]
             };
         }
+
+        public override DepositInfo GetDepositInfo(Empty input)
+        {
+            return State.DepositInfo.Value;
+        }
     }
 }
