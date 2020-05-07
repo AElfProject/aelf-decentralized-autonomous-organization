@@ -12,14 +12,14 @@ namespace AElf.Contracts.DAOContract
         public override Empty ProposeJoin(Address input)
         {
             AssertReleasedByParliament();
-            if (State.DepositAmount.Value > 0)
+            if (State.DepositInfo.Value.Amount > 0)
             {
                 State.TokenContract.TransferFrom.Send(new TransferFromInput
                 {
                     From = input,
                     To = Context.Self,
-                    Symbol = State.DepositSymbol.Value,
-                    Amount = State.DepositAmount.Value
+                    Symbol = State.DepositInfo.Value.Symbol,
+                    Amount = State.DepositInfo.Value.Amount
                 });
             }
 
@@ -37,13 +37,13 @@ namespace AElf.Contracts.DAOContract
 
         public override Empty Quit(Empty input)
         {
-            if (State.DepositAmount.Value > 0)
+            if (State.DepositInfo.Value.Amount > 0)
             {
                 State.TokenContract.Transfer.Send(new TransferInput
                 {
                     To = Context.Sender,
-                    Symbol = State.DepositSymbol.Value,
-                    Amount = State.DepositAmount.Value
+                    Symbol = State.DepositInfo.Value.Symbol,
+                    Amount = State.DepositInfo.Value.Amount
                 });
             }
 

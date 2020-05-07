@@ -17,6 +17,7 @@ namespace AElf.Contracts.DAOContract
     {
         public override Empty Initialize(InitializeInput input)
         {
+            Assert(!State.Initialized.Value, "Already initialized.");
             State.AssociationContract.Value =
                 Context.GetContractAddressByName(SmartContractConstants.AssociationContractSystemName);
             State.ConsensusContract.Value =
@@ -72,10 +73,15 @@ namespace AElf.Contracts.DAOContract
 
             State.DAOInitialMemberList.Value = minerList;
 
-            State.DepositSymbol.Value = Context.Variables.NativeSymbol;
-            State.DepositAmount.Value = input.DepositAmount;
+            State.DepositInfo.Value = new DepositInfo
+            {
+                Symbol = Context.Variables.NativeSymbol,
+                Amount = input.DepositAmount
+            };
 
             AdjustDAOProposalReleaseThreshold();
+
+            State.Initialized.Value = true;
 
             return new Empty();
         }
@@ -106,6 +112,14 @@ namespace AElf.Contracts.DAOContract
                 }
             }
 
+            return new Empty();
+        }
+
+        public override Empty ChangeDepositInfo(DepositInfo input)
+        {
+            AssertReleasedByParliament();
+            Assert(!string.IsNullOrEmpty(input.Symbol) && input.Amount > 0, "Invalid deposit information.");
+            State.DepositInfo.Value = input;
             return new Empty();
         }
 

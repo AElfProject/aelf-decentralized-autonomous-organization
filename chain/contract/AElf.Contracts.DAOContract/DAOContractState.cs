@@ -1,3 +1,4 @@
+using System;
 using AElf.Contracts.Association;
 using AElf.Contracts.Consensus.AEDPoS;
 using AElf.Contracts.MultiToken;
@@ -19,14 +20,15 @@ namespace AElf.Contracts.DAOContract
         internal TokenContractContainer.TokenContractReferenceState TokenContract { get; set; }
         internal ProfitContractContainer.ProfitContractReferenceState ProfitContract { get; set; }
 
+        public SingletonState<bool> Initialized { get; set; }
+
         public SingletonState<MemberList> DAOInitialMemberList { get; set; }
 
         public SingletonState<Address> ParliamentDefaultAddress { get; set; }
 
         public SingletonState<Address> ReferendumOrganizationAddress { get; set; }
 
-        public SingletonState<string> DepositSymbol { get; set; }
-        public SingletonState<long> DepositAmount { get; set; }
+        public SingletonState<DepositInfo> DepositInfo { get; set; }
         public SingletonState<MemberList> DAOMemberList { get; set; }
 
         public MappedState<Hash, ProjectInfo> Projects { get; set; }
