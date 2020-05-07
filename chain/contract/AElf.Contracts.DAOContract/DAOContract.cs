@@ -189,8 +189,12 @@ namespace AElf.Contracts.DAOContract
 
         public override Empty Invest(InvestInput input)
         {
-            Assert(State.Projects[input.ProjectId] != null, "Project not found.");
             var projectInfo = State.Projects[input.ProjectId];
+            if (projectInfo == null)
+            {
+                throw new AssertionException("Project not found.");
+            }
+            Assert(projectInfo.Status == ProjectStatus.Proposed, "Budget plans not added.");
             var totalBudgets = projectInfo.BudgetPlans.Where(p => p.Symbol == input.Symbol).Sum(p => p.Amount);
             var currentBalance = State.TokenContract.GetBalance.Call(new GetBalanceInput
             {
@@ -209,7 +213,6 @@ namespace AElf.Contracts.DAOContract
                 });
 
                 // Update BudgetPlans.
-                // TODO: Possible improve.
                 var remainBudgets = currentBalance.Add(actualAmount);
                 foreach (var budgetPlan in projectInfo.BudgetPlans.Where(p => p.Symbol == input.Symbol))
                 {
