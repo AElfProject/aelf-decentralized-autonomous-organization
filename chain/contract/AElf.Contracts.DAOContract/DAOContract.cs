@@ -73,20 +73,7 @@ namespace AElf.Contracts.DAOContract
 
             State.DAOInitialMemberList.Value = minerList;
 
-            if (string.IsNullOrEmpty(input.DepositInfo.Symbol))
-            {
-                input.DepositInfo.Symbol = Context.Variables.NativeSymbol;
-            }
-            else
-            {
-                var tokenInfo = State.TokenContract.GetTokenInfo.Call(new GetTokenInfoInput
-                {
-                    Symbol = input.DepositInfo.Symbol
-                });
-                Assert(tokenInfo != null, "Invalid deposit symbol.");
-            }
-            Assert(input.DepositInfo.Amount > 0, "Invalid deposit amount.");
-            State.DepositInfo.Value = input.DepositInfo;
+            CheckAndUpdateDepositInfo(input.DepositInfo);
 
             AdjustDAOProposalReleaseThreshold();
 
@@ -127,9 +114,31 @@ namespace AElf.Contracts.DAOContract
         public override Empty ChangeDepositInfo(DepositInfo input)
         {
             AssertReleasedByParliament();
-            Assert(!string.IsNullOrEmpty(input.Symbol) && input.Amount > 0, "Invalid deposit information.");
-            State.DepositInfo.Value = input;
+            CheckAndUpdateDepositInfo(input);
             return new Empty();
+        }
+
+        private void CheckAndUpdateDepositInfo(DepositInfo depositInfo)
+        {
+            if (string.IsNullOrEmpty(depositInfo.Symbol))
+            {
+                depositInfo.Symbol = Context.Variables.NativeSymbol;
+            }
+            else
+            {
+                var tokenInfo = State.TokenContract.GetTokenInfo.Call(new GetTokenInfoInput
+                {
+                    Symbol = depositInfo.Symbol
+                });
+                if (tokenInfo == null)
+                {
+                    throw new AssertionException("Invalid deposit symbol.");
+                }
+            }
+
+            Assert(depositInfo.Amount > 0, "Invalid deposit amount.");
+
+            State.DepositInfo.Value = depositInfo;
         }
 
         public override Empty ProjectPreAudition(ProjectPreAuditionInput input)
