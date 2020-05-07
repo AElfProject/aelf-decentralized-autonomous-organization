@@ -205,14 +205,18 @@ namespace AElf.Contracts.DAOContract
             if (budgetPlan == null) return;
             if (projectInfo.CurrentBudgetPlanIndex > 0)
             {
-                var preBudgetPlanReceiver = projectInfo.BudgetPlans
-                    .Single(p => p.Index == projectInfo.CurrentBudgetPlanIndex.Sub(1)).ReceiverAddress;
-                Context.SendVirtualInline(projectInfo.GetProjectId(), State.ProfitContract.Value,
-                    nameof(State.ProfitContract.RemoveBeneficiary), new RemoveBeneficiaryInput
-                    {
-                        SchemeId = projectInfo.ProfitSchemeId,
-                        Beneficiary = preBudgetPlanReceiver
-                    }.ToByteString());
+                var preBudgetPlan = projectInfo.BudgetPlans
+                    .SingleOrDefault(p => p.Index == targetIndex.Sub(1));
+                if (preBudgetPlan != null)
+                {
+                    var preBudgetPlanReceiver = preBudgetPlan.ReceiverAddress;
+                    Context.SendVirtualInline(projectInfo.GetProjectId(), State.ProfitContract.Value,
+                        nameof(State.ProfitContract.RemoveBeneficiary), new RemoveBeneficiaryInput
+                        {
+                            SchemeId = projectInfo.ProfitSchemeId,
+                            Beneficiary = preBudgetPlanReceiver
+                        }.ToByteString());
+                }
             }
 
             Context.SendVirtualInline(projectInfo.GetProjectId(), State.ProfitContract.Value,

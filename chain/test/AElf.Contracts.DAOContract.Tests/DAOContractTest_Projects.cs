@@ -515,7 +515,7 @@ namespace AElf.Contracts.DAOContract
                         Owner = BobAddress,
                         Symbol = "ELF"
                     });
-                    balance.Balance.ShouldBePositive();
+                    balance.Balance.ShouldBe(InvestAmount / 2);
                 }
             }
 
@@ -569,7 +569,7 @@ namespace AElf.Contracts.DAOContract
                     balance.Balance.ShouldBe(0);
                 }
 
-                // Bob takes rewards.
+                // Ean takes rewards.
                 await EanProfitContractStub.ClaimProfits.SendAsync(new ClaimProfitsInput
                 {
                     SchemeId = projectInfo.ProfitSchemeId,
@@ -582,7 +582,7 @@ namespace AElf.Contracts.DAOContract
                         Owner = EanAddress,
                         Symbol = "ELF"
                     });
-                    balance.Balance.ShouldBePositive();
+                    balance.Balance.ShouldBe(InvestAmount / 2);
                 }
             }
         }
