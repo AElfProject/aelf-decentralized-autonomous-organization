@@ -109,9 +109,8 @@ service DAOContract {
 }
 
 message InitializeInput {
-    string deposit_symbol = 1;
-    int64 deposit_amount = 2;
-    repeated aelf.Address initial_member_list = 3;
+    DepositInfo deposit_info = 1;
+    repeated aelf.Address initial_member_list = 2;
 }
 
 message ReleaseProposalInput {

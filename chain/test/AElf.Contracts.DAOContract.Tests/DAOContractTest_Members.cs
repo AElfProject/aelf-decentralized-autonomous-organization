@@ -43,7 +43,10 @@ namespace AElf.Contracts.DAOContract
         {
             await DAOContractStub.Initialize.SendAsync(new InitializeInput
             {
-                DepositAmount = DepositAmount
+                DepositInfo = new DepositInfo
+                {
+                    Amount = DepositAmount
+                }
             });
         }
 

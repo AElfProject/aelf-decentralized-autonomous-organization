@@ -73,11 +73,20 @@ namespace AElf.Contracts.DAOContract
 
             State.DAOInitialMemberList.Value = minerList;
 
-            State.DepositInfo.Value = new DepositInfo
+            if (string.IsNullOrEmpty(input.DepositInfo.Symbol))
             {
-                Symbol = Context.Variables.NativeSymbol,
-                Amount = input.DepositAmount
-            };
+                input.DepositInfo.Symbol = Context.Variables.NativeSymbol;
+            }
+            else
+            {
+                var tokenInfo = State.TokenContract.GetTokenInfo.Call(new GetTokenInfoInput
+                {
+                    Symbol = input.DepositInfo.Symbol
+                });
+                Assert(tokenInfo != null, "Invalid deposit symbol.");
+            }
+            Assert(input.DepositInfo.Amount > 0, "Invalid deposit amount.");
+            State.DepositInfo.Value = input.DepositInfo;
 
             AdjustDAOProposalReleaseThreshold();
 
