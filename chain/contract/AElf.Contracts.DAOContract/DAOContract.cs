@@ -194,7 +194,7 @@ namespace AElf.Contracts.DAOContract
             {
                 throw new AssertionException("Project not found.");
             }
-            Assert(projectInfo.Status == ProjectStatus.Proposed, "Budget plans not added.");
+            Assert(projectInfo.Status == ProjectStatus.Approved, "Budget plans not added.");
             var totalBudgets = projectInfo.BudgetPlans.Where(p => p.Symbol == input.Symbol).Sum(p => p.Amount);
             var currentBalance = State.TokenContract.GetBalance.Call(new GetBalanceInput
             {
