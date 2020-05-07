@@ -29,7 +29,7 @@ service DAOContract {
     rpc AdjustProposalReleaseThreshold (DAOProposalReleaseThreshold) returns (google.protobuf.Empty) {
     }
     
-    rpc ProjectPreAudition (ProjectPreAuditionInput) returns (aelf.Hash)  {
+    rpc ProjectPreAudition (ProjectPreAuditionInput) returns (google.protobuf.Empty)  {
     }
     rpc SetReferendumOrganizationAddress (aelf.Address) returns (google.protobuf.Empty) {
     }
@@ -95,6 +95,9 @@ service DAOContract {
         option (aelf.is_view) = true;
     }
     rpc GetPreAuditionResult (aelf.Hash) returns (google.protobuf.BoolValue) {
+        option (aelf.is_view) = true;
+    }
+    rpc GetReferendumOrganizationAddress (google.protobuf.Empty) returns (aelf.Address) {
         option (aelf.is_view) = true;
     }
 }

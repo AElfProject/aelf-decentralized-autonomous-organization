@@ -109,7 +109,7 @@ namespace AElf.Contracts.DAOContract
             return new Empty();
         }
 
-        public override Hash ProjectPreAudition(ProjectPreAuditionInput input)
+        public override Empty ProjectPreAudition(ProjectPreAuditionInput input)
         {
             Assert(Context.Sender == State.ReferendumOrganizationAddress.Value, "No permission.");
             var project = new ProjectInfo
@@ -118,7 +118,7 @@ namespace AElf.Contracts.DAOContract
                 CommitId = input.CommitId
             };
             State.PreAuditionResult[project.GetProjectId()] = true;
-            return new Hash();
+            return new Empty();
         }
 
         public override Empty SetReferendumOrganizationAddress(Address input)
@@ -126,6 +126,11 @@ namespace AElf.Contracts.DAOContract
             Assert(Context.Sender == State.ParliamentDefaultAddress.Value, "No permission.");
             State.ReferendumOrganizationAddress.Value = input;
             return new Empty();
+        }
+
+        public override Address GetReferendumOrganizationAddress(Empty input)
+        {
+            return State.ReferendumOrganizationAddress.Value;
         }
 
         public override Empty AdjustProposalReleaseThreshold(DAOProposalReleaseThreshold input)
